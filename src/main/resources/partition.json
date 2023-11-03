@@ -1,0 +1,428 @@
+{
+  "partitions": [
+    {
+      "partition": "生活",
+      "subPartition": "搞笑"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "亲子"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "出行"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "三农"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "家居房产"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "手工"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "绘画"
+    },
+    {
+      "partition": "生活",
+      "subPartition": "日常"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "单机游戏"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "网络游戏"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "手机游戏"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "电子竞技"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "桌游棋牌"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "音游"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "GMV"
+    },
+    {
+      "partition": "游戏",
+      "subPartition": "Mugen"
+    },
+    {
+      "partition": "娱乐",
+      "subPartition": "综艺"
+    },
+    {
+      "partition": "娱乐",
+      "subPartition": "娱乐杂谈"
+    },
+    {
+      "partition": "娱乐",
+      "subPartition": "粉丝创作"
+    },
+    {
+      "partition": "娱乐",
+      "subPartition": "明星综合"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "科学科普"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "社科·法律·心理"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "人文历史"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "财经商业"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "校园学习"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "职业职场"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "设计·创意"
+    },
+    {
+      "partition": "知识",
+      "subPartition": "野生技能协会"
+    },
+    {
+      "partition": "影视",
+      "subPartition": "影视杂谈"
+    },
+    {
+      "partition": "影视",
+      "subPartition": "影视剪辑"
+    },
+    {
+      "partition": "影视",
+      "subPartition": "小剧场"
+    },
+    {
+      "partition": "影视",
+      "subPartition": "短片"
+    },
+    {
+      "partition": "影视",
+      "subPartition": "预告·资讯"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "翻唱"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "演奏"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "音乐综合"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "MV"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "音乐教学"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "原创音乐"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "VOCALOID`UTAU"
+    },
+    {
+      "partition": "音乐",
+      "subPartition": "乐评盘点"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "MAD·AMV"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "MAD·3D"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "短片·手书"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "配音"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "手办·模玩"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "特摄"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "动漫杂谈"
+    },
+    {
+      "partition": "动画",
+      "subPartition": "综合"
+    },
+    {
+      "partition": "时尚",
+      "subPartition": "美妆护肤"
+    },
+    {
+      "partition": "时尚",
+      "subPartition": "仿妆cos"
+    },
+    {
+      "partition": "时尚",
+      "subPartition": "穿搭"
+    },
+    {
+      "partition": "时尚",
+      "subPartition": "时尚潮流"
+    },
+    {
+      "partition": "美食",
+      "subPartition": "美食制作"
+    },
+    {
+      "partition": "美食",
+      "subPartition": "美食侦探"
+    },
+    {
+      "partition": "美食",
+      "subPartition": "美食测评"
+    },
+    {
+      "partition": "美食",
+      "subPartition": "田园美食"
+    },
+    {
+      "partition": "美食",
+      "subPartition": "美食记录"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "赛车"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "改装玩车"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "新能源车"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "房车"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "摩托车"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "购车攻略"
+    },
+    {
+      "partition": "汽车",
+      "subPartition": "汽车生活"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "篮球"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "足球"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "健身"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "竞技体育"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "运动文化"
+    },
+    {
+      "partition": "运动",
+      "subPartition": "运动综合"
+    },
+    {
+      "partition": "科技",
+      "subPartition": "数码"
+    },
+    {
+      "partition": "科技",
+      "subPartition": "软件应用"
+    },
+    {
+      "partition": "科技",
+      "subPartition": "计算机技术"
+    },
+    {
+      "partition": "科技",
+      "subPartition": "科工机械"
+    },
+    {
+      "partition": "科技",
+      "subPartition": "极客DIY"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "喵星人"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "汪星人"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "小宠异宠"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "野生动物"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "动物二创"
+    },
+    {
+      "partition": "动物圈",
+      "subPartition": "动物综合"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "宅舞"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "舞蹈综合"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "手势·网红舞"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "街舞"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "明星舞蹈"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "国风舞蹈"
+    },
+    {
+      "partition": "舞蹈",
+      "subPartition": "舞蹈教程"
+    },
+    {
+      "partition": "国创",
+      "subPartition": "国产动画"
+    },
+    {
+      "partition": "国创",
+      "subPartition": "布袋戏"
+    },
+    {
+      "partition": "国创",
+      "subPartition": "资讯"
+    },
+    {
+      "partition": "国创",
+      "subPartition": "动态漫·广播剧"
+    },
+    {
+      "partition": "鬼畜",
+      "subPartition": "鬼畜调教"
+    },
+    {
+      "partition": "鬼畜",
+      "subPartition": "音MAD"
+    },
+    {
+      "partition": "鬼畜",
+      "subPartition": "人力VOCALOID"
+    },
+    {
+      "partition": "鬼畜",
+      "subPartition": "鬼畜剧场"
+    },
+    {
+      "partition": "鬼畜",
+      "subPartition": "教程演示"
+    },
+    {
+      "partition": "纪录片",
+      "subPartition": "人文·历史"
+    },
+    {
+      "partition": "纪录片",
+      "subPartition": "科学·探索·自然"
+    },
+    {
+      "partition": "纪录片",
+      "subPartition": "军事"
+    },
+    {
+      "partition": "纪录片",
+      "subPartition": "社会·美食·旅行"
+    },
+    {
+      "partition": "番剧",
+      "subPartition": "资讯"
+    },
+    {
+      "partition": "番剧",
+      "subPartition": "官方衍生"
+    },
+    {
+      "partition": "电视剧",
+      "subPartition": "国产剧"
+    },
+    {
+      "partition": "电影",
+      "subPartition": "国产电影"
+    }
+  ]
+}
