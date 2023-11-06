@@ -1,18 +1,20 @@
 package com.jerry.pilipala.interfaces.web;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
-import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-import com.jerry.pilipala.infrastructure.enums.LimitType;
+import com.jerry.pilipala.application.vo.PreUploadVO;
+import com.jerry.pilipala.application.vo.bvod.BVodVO;
+import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
+import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
+import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
+import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
+import com.jerry.pilipala.infrastructure.enums.LimitType;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.application.vo.PreUploadVO;
-import com.jerry.pilipala.application.vo.bvod.BVodVO;
-import com.jerry.pilipala.application.vo.vod.VodVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +35,7 @@ public class VodController {
      *
      * @return filename
      */
-    @SaCheckPermission("creator")
+    @SaCheckPermission("post-vod")
 //    @RateLimiter(key = "vod-limit:upload", seconds = 60, count = 3, message = "上传速度过快，请稍后再试试吧", limitType = LimitType.IP)
     @PostMapping("/pre-upload")
     public CommonResponse<?> preUpload(@Valid @RequestBody PreUploadDTO preUploadDTO) {
@@ -45,6 +47,12 @@ public class VodController {
     @GetMapping("/vod/{bvid}")
     public CommonResponse<?> videos(@PathVariable("bvid") String bvid) {
         BVodVO videos = vodService.videos(bvid);
+        return CommonResponse.success(videos);
+    }
+
+    @GetMapping("/vod/sd/{cid}")
+    public CommonResponse<?> sdVideo(@PathVariable("cid") Long cid) {
+        BVodVO videos = vodService.sdVideo(cid);
         return CommonResponse.success(videos);
     }
 
@@ -61,10 +69,10 @@ public class VodController {
      * @param videoPostDTO 稿件信息
      * @return success
      */
-    @SaCheckPermission("creator")
+    @SaCheckPermission("post-vod")
     @PostMapping("/post")
     public CommonResponse<?> post(@Valid @RequestBody VideoPostDTO videoPostDTO) {
-        vodService.add(videoPostDTO);
+        vodService.post(videoPostDTO);
         return CommonResponse.success();
     }
 
@@ -99,6 +107,17 @@ public class VodController {
     }
 
     /**
+     * 获取需要审核的稿件
+     */
+    @GetMapping("/review/page")
+    public CommonResponse<?> reviewPage(@RequestParam(value = "page_no", defaultValue = "1") Integer pageNo,
+                                        @RequestParam(value = "page_size", defaultValue = "10") Integer pageSize,
+                                        @RequestParam(value = "status", defaultValue = "handing") String status) {
+        Page<VodVO> page = vodService.reviewPage(pageNo, pageSize, status);
+        return CommonResponse.success(page);
+    }
+
+    /**
      * 审批稿件
      *
      * @param cid    cid
@@ -114,7 +133,7 @@ public class VodController {
     }
 
     @PutMapping("/time/{bvId}/{cid}")
-    @RateLimiter(key = "vod-limit:update-play-time", seconds = 1, count = 1, message = "更新过快，请稍后重试", limitType = LimitType.IP)
+    @RateLimiter(key = "vod-limit:update-play-time", seconds = 1, count = 5, message = "更新过快，请稍后重试", limitType = LimitType.IP)
     public void updatePlayTime(@PathVariable("bvId") String bvId,
                                @PathVariable("cid") Long cid,
                                @RequestParam("time") Integer time) {
@@ -127,4 +146,16 @@ public class VodController {
     }
 
 
+    @SaCheckLogin
+    @PutMapping("/vod/interactive/put/{name}")
+    public void updateInteractive(@PathVariable("name") String actionName,
+                                  @RequestParam("cid") Long cid) {
+        vodService.interactive(actionName, cid);
+    }
+
+    @GetMapping("/vod/interaction/info/{cid}")
+    public CommonResponse<InteractionInfoVO> info(@PathVariable("cid") Long cid) {
+        InteractionInfoVO interactionInfoVO = vodService.interactionInfo(cid);
+        return CommonResponse.success(interactionInfoVO);
+    }
 }

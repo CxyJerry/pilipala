@@ -11,6 +11,6 @@ public class CommentVO {
     private String cid;
     private PreviewUserVO author;
     private String content;
-    private Integer childCount;
+    private Boolean hasChild;
     private Long date;
 }

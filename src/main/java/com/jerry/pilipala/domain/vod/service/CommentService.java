@@ -1,8 +1,8 @@
 package com.jerry.pilipala.domain.vod.service;
 
 import com.jerry.pilipala.application.dto.CommentDTO;
-import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.application.vo.CommentVO;
+import com.jerry.pilipala.infrastructure.utils.Page;
 
 public interface CommentService {
     CommentVO post(CommentDTO commentDTO);

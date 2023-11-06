@@ -2,49 +2,56 @@ package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionRecord;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodPlayOffsetRecord;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.BVod;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodProfiles;
-import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
-import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.infrastructure.config.FileConfig;
-import com.jerry.pilipala.domain.vod.service.media.UGCSchema;
-import com.jerry.pilipala.domain.vod.service.media.encoder.Encoder;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
-import com.jerry.pilipala.infrastructure.enums.Qn;
-import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
-import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
-import com.jerry.pilipala.infrastructure.enums.video.Resolution;
-import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
-import com.jerry.pilipala.domain.user.entity.mongo.User;
-import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
-import com.jerry.pilipala.domain.vod.entity.mongo.distribute.VodDistributeInfo;
-import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.Thumbnails;
-import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
-import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
-import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
-import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
-import com.jerry.pilipala.domain.vod.service.VodService;
-import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
-import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.infrastructure.utils.SecurityTool;
 import com.jerry.pilipala.application.vo.PreUploadVO;
 import com.jerry.pilipala.application.vo.QualityVO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
+import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
 import com.jerry.pilipala.application.vo.vod.PreviewVodVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
+import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.user.entity.mongo.User;
+import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
+import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
+import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
+import com.jerry.pilipala.domain.vod.entity.mongo.distribute.VodDistributeInfo;
+import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
+import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionRecord;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodPlayOffsetRecord;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.Thumbnails;
+import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.BVod;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodProfiles;
+import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
+import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
+import com.jerry.pilipala.domain.vod.service.VodService;
+import com.jerry.pilipala.domain.vod.service.media.UGCSchema;
+import com.jerry.pilipala.domain.vod.service.media.encoder.Encoder;
+import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
+import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
+import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
+import com.jerry.pilipala.infrastructure.config.FileConfig;
+import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.Qn;
+import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
+import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
+import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
+import com.jerry.pilipala.infrastructure.enums.video.Resolution;
+import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
+import com.jerry.pilipala.infrastructure.utils.Page;
+import com.jerry.pilipala.infrastructure.utils.SecurityTool;
 import lombok.extern.slf4j.Slf4j;
 import net.bramp.ffmpeg.FFmpeg;
 import net.bramp.ffmpeg.FFmpegExecutor;
@@ -104,6 +111,9 @@ public class VodServiceImpl implements VodService {
     private final HttpServletResponse response;
     private final VodInfoRepository vodInfoRepository;
 
+    private final UserEntityRepository userEntityRepository;
+    private final MessageService messageService;
+
 
     public static boolean windows() {
         return System.getProperty("os.name").toLowerCase().contains("windows");
@@ -118,7 +128,7 @@ public class VodServiceImpl implements VodService {
                           UGCSchema ugcSchema,
                           @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor,
                           HttpServletResponse response,
-                          VodInfoRepository vodInfoRepository) {
+                          VodInfoRepository vodInfoRepository, UserEntityRepository userEntityRepository, MessageService messageService) {
         this.mapper = mapper;
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
@@ -128,6 +138,8 @@ public class VodServiceImpl implements VodService {
         this.taskExecutor = taskExecutor;
         this.response = response;
         this.vodInfoRepository = vodInfoRepository;
+        this.userEntityRepository = userEntityRepository;
+        this.messageService = messageService;
     }
 
     {
@@ -229,7 +241,7 @@ public class VodServiceImpl implements VodService {
      * @param videoPostDTO 稿件信息
      */
     @Transactional(rollbackFor = Exception.class, value = "multiTransactionManager")
-    public void add(VideoPostDTO videoPostDTO) {
+    public void post(VideoPostDTO videoPostDTO) {
         Query query = new Query(Criteria.where("_id").is(videoPostDTO.getBvId()));
         BVod bVod = mongoTemplate.findOne(query, BVod.class);
         if (Objects.isNull(bVod)) {
@@ -262,6 +274,21 @@ public class VodServiceImpl implements VodService {
         );
         // 触发提交结束
         applicationEventPublisher.publishEvent(actionEvent);
+
+        // 推送站内信
+        User author = mongoTemplate.findById(new ObjectId(bVod.getUid()), User.class);
+        if (Objects.isNull(author)) {
+            log.error("消息推送失败，稿件作者信息异常.");
+            return;
+        }
+        String msg = "亲爱的%s,感谢您的投稿，稿件 %s(bvId:%s,cid:%s) 正在处理中，请耐心等待!"
+                .formatted(
+                        author.getNickname(),
+                        vodInfo.getTitle(),
+                        vodInfo.getBvId(),
+                        vodInfo.getCid()
+                );
+        messageService.send("", bVod.getUid(), msg);
     }
 
     /**
@@ -316,6 +343,11 @@ public class VodServiceImpl implements VodService {
     }
 
 
+    /**
+     * 转出缩略图
+     *
+     * @param cid 稿件唯一ID
+     */
     @Override
     public void transcodeThumbnails(Long cid) {
         CompletableFuture.runAsync(() -> {
@@ -473,18 +505,37 @@ public class VodServiceImpl implements VodService {
     @Override
     public void video(Long cid, String format, String name) {
         String outputFilename;
-        VodInfo vodInfo = mongoTemplate.findOne(
-                new Query(Criteria.where("_id").is(cid)
-                        .and("status").is(VodStatusEnum.PASSED)),
-                VodInfo.class);
-        if (Objects.isNull(vodInfo)) {
-            throw new BusinessException("稿件未开放", StandardResponse.ERROR);
-        }
+        String uid = StpUtil.getLoginId("");
 
         VodDistributeInfo vodDistributeInfo = mongoTemplate.findOne(new Query(Criteria.where("_id").is(cid)), VodDistributeInfo.class);
-        assert vodDistributeInfo != null;
-        if (!Objects.isNull(vodDistributeInfo.getReady()) && !vodDistributeInfo.getReady()) {
-            throw new BusinessException("稿件未准备妥当", StandardResponse.ERROR);
+        boolean needCheckPermission = false;
+        if (StringUtils.isNotBlank(uid)) {
+            User accessor = mongoTemplate.findOne(
+                    new Query(Criteria.where("_id").is(new ObjectId(uid))), User.class);
+
+            if (Objects.isNull(accessor) || !accessor.getPermission().contains("review-vod")) {
+                needCheckPermission = true;
+            }
+        } else {
+            needCheckPermission = true;
+        }
+        if (needCheckPermission) {
+            Criteria criteria = Criteria.where("_id").is(cid)
+                    .and("status").is(VodStatusEnum.PASSED);
+
+            VodInfo vodInfo = mongoTemplate.findOne(
+                    new Query(criteria),
+                    VodInfo.class);
+            if (Objects.isNull(vodInfo)) {
+                throw new BusinessException("稿件未开放", StandardResponse.ERROR);
+            }
+
+            if (Objects.nonNull(vodDistributeInfo) && !vodDistributeInfo.getReady()) {
+                throw new BusinessException("稿件未准备妥当", StandardResponse.ERROR);
+            }
+        }
+        if (Objects.isNull(vodDistributeInfo)) {
+            throw BusinessException.businessError("稿件未准备妥当");
         }
         Qn qn = Qn.valueOfFormat(format);
         Quality quality = vodDistributeInfo.getQualityMap().get(qn.getQn());
@@ -534,31 +585,51 @@ public class VodServiceImpl implements VodService {
             throw new BusinessException("稿件不存在", StandardResponse.ERROR);
         }
         vodInfo.setStatus(statusEnum);
-        redisTemplate.opsForSet().add(vodInfo.getPartition(), vodInfo.getBvId());
-        redisTemplate.opsForSet().add("all_bvod", vodInfo.getBvId());
         mongoTemplate.save(vodInfo);
 
-        User authorModel = mongoTemplate.findOne(
-                new Query(Criteria.where("_id").is(new ObjectId(vodInfo.getUid()))),
-                User.class);
-        if (Objects.isNull(authorModel)) {
+        User author = mongoTemplate.findById(new ObjectId(vodInfo.getUid()), User.class);
+        if (Objects.isNull(author)) {
             throw new BusinessException("创作者信息异常", StandardResponse.ERROR);
         }
-        UserEntity author = new UserEntity().setUid(authorModel.getUid().toString())
-                .setTel(authorModel.getTel())
-                .setNickname(authorModel.getNickname())
-                .setCtime(authorModel.getCtime());
 
-        // 存入图数据库
+        // 审批未通过，不需要推荐
+        if (!statusEnum.equals(VodStatusEnum.PASSED)) {
+            vodInfoRepository.deleteById(vodInfo.getCid());
+            if (statusEnum.equals(VodStatusEnum.FAIL)) {
+                // 推送站内信
+                String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 未通过审核,请联系审核人员进行原因了解."
+                        .formatted(author.getNickname(),
+                                vodInfo.getTitle(),
+                                vodInfo.getBvId(),
+                                vodInfo.getCid());
+                messageService.send("", vodInfo.getUid(), msg);
+            }
+            return;
+        }
+
+        UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(new UserEntity());
+        // 存入图数据库,准备推荐
         VodInfoEntity vodInfoEntity = new VodInfoEntity().setCid(vodInfo.getCid())
                 .setBvId(vodInfo.getBvId())
-                .setAuthor(author)
+                .setAuthorId(author.getUid().toString())
+                .setAuthor(userEntity)
+                .setCoverUrl(vodInfo.getCoverUrl())
+                .setTitle(vodInfo.getTitle())
+                .setDesc(vodInfo.getDesc())
                 .setGcType(vodInfo.getGcType())
                 .setPartition(vodInfo.getPartition())
                 .setSubPartition(vodInfo.getSubPartition())
                 .setLabels(vodInfo.getLabels())
                 .setCtime(vodInfo.getCtime());
         vodInfoRepository.save(vodInfoEntity);
+
+        // 推送站内信
+        String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 已通过审核."
+                .formatted(author.getNickname(),
+                        vodInfo.getTitle(),
+                        vodInfo.getBvId(),
+                        vodInfo.getCid());
+        messageService.send("", vodInfo.getUid(), msg);
     }
 
 
@@ -576,7 +647,6 @@ public class VodServiceImpl implements VodService {
             VodStatusEnum vodStatus = VodStatusEnum.parse(status);
             criteria.and("status").is(vodStatus);
         }
-
 
         // 查询出所有可播放的 bvod
         Query pageQuery = new Query(criteria)
@@ -606,7 +676,7 @@ public class VodServiceImpl implements VodService {
 
         // statics 数据查询
         List<VodStatics> bVodStaticsList = mongoTemplate.find(
-                new Query(Criteria.where("_id").in(cidSet)),
+                new Query(Criteria.where("cid").in(cidSet)),
                 VodStatics.class);
 
         Map<Long, VodStatics> vodStaticsMap;
@@ -666,8 +736,18 @@ public class VodServiceImpl implements VodService {
 
         // 取出所有的可播放的 vod 的 cid,查询统计信息
         Collection<Object> cidList = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
+
+        Map<Long, VodInfoEntity> vodInfoEntityMap = redisTemplate.opsForHash()
+                .multiGet(VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY,
+                        cidList.stream().map(String::valueOf).collect(Collectors.toSet()))
+                .stream()
+                .filter(Objects::nonNull)
+                .map(v -> mapper.convertValue(v, VodInfoEntity.class))
+                .collect(Collectors.toMap(VodInfoEntity::getCid, v -> v));
+
         List<VodStatics> vodStaticsList = mongoTemplate.find(
-                new Query(Criteria.where("id").in(cidList)),
+                new Query(Criteria.where("cid").in(cidList)
+                        .and("data").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
                 VodStatics.class);
 
         Map<Long, VodStatics> staticsMap = vodStaticsList.stream()
@@ -675,7 +755,7 @@ public class VodServiceImpl implements VodService {
 
 
         // 查询用户观看数据
-        Object loginId = StpUtil.getLoginId(null);
+        Object loginId = StpUtil.getLoginId("");
         Map<Long, VodPlayOffsetRecord> vodPlayRecordMap;
         if (Objects.nonNull(loginId)) {
             // 查询视频观看数据
@@ -692,7 +772,7 @@ public class VodServiceImpl implements VodService {
         }
 
         // 查询投稿人信息
-        User user = mongoTemplate.findOne(new Query(Criteria.where("_id").is(bVod.getUid())), User.class);
+        User user = mongoTemplate.findById(new ObjectId(bVod.getUid()), User.class);
         if (Objects.isNull(user)) {
             throw new BusinessException("稿件信息异常", StandardResponse.ERROR);
         }
@@ -733,7 +813,23 @@ public class VodServiceImpl implements VodService {
             );
 
             // 获取统计数据
-            VodStatics statics = staticsMap.getOrDefault(vod.getCid(), VodStatics.EMPTY_STATICS);
+            VodStatics statics = staticsMap.getOrDefault(vod.getCid(), new VodStatics());
+            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vod.getCid(), null);
+            if (Objects.isNull(vodInfoEntity)) {
+                vodInfoEntity = vodInfoRepository.findById(vod.getCid()).orElse(null);
+                if (Objects.isNull(vodInfoEntity)) {
+                    vodInfoEntity = new VodInfoEntity();
+                } else {
+                    redisTemplate.opsForHash().put(VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY, vod.getCid().toString(), vodInfoEntity);
+                }
+            }
+            statics.setViewCount(statics.getViewCount() + vodInfoEntity.getViewCount())
+                    .setLikeCount(statics.getLikeCount() + vodInfoEntity.getLikeCount())
+                    .setBarrageCount(statics.getBarrageCount() + vodInfoEntity.getBarrageCount())
+                    .setCommentCount(statics.getCommentCount() + vodInfoEntity.getCommentCount())
+                    .setCoinCount(statics.getCoinCount() + vodInfoEntity.getCoinCount())
+                    .setCollectCount(statics.getCollectCount() + vodInfoEntity.getCollectCount())
+                    .setShareCount(statics.getShareCount() + vodInfoEntity.getShareCount());
 
             // 查询在线观看人数
             Long onlineCount = redisTemplate.opsForZSet().size("online-".concat(String.valueOf(vod.getCid())));
@@ -743,6 +839,7 @@ public class VodServiceImpl implements VodService {
             // 组装视图模型
             VodVO vodVO = new VodVO();
             vodVO.setQuality(qualityVOList)
+                    .setBvId(vod.getBvId())
                     .setCid(vod.getCid())
                     .setCoverUrl(vod.getCoverUrl())
                     .setTitle(vod.getTitle())
@@ -770,12 +867,57 @@ public class VodServiceImpl implements VodService {
     }
 
     @Override
+    public BVodVO sdVideo(Long cid) {
+        VodInfo vodInfo = mongoTemplate.findById(cid, VodInfo.class);
+        if (Objects.isNull(vodInfo)) {
+            throw BusinessException.businessError("稿件异常");
+        }
+        // 查询清晰度分发信息
+        Query distributeQuery = new Query(Criteria.where("_id").is(cid));
+        VodDistributeInfo distributeInfo = mongoTemplate.findOne(distributeQuery, VodDistributeInfo.class);
+        if (Objects.isNull(distributeInfo)) {
+            throw BusinessException.businessError("稿件准备中");
+        }
+        Quality quality = distributeInfo.getQualityMap().get(Qn._360P.getQn());
+        String qnDescription = Qn.valueOfQn(quality.getQn()).getDescription();
+        QualityVO qualityVO = new QualityVO().setName(qnDescription)
+                .setUrl("/file/video/%s/%s/1".formatted(cid, qnDescription));
+        // 查询投稿人信息
+        User user = mongoTemplate.findById(new ObjectId(vodInfo.getUid()), User.class);
+        if (Objects.isNull(user)) {
+            throw new BusinessException("稿件信息异常", StandardResponse.ERROR);
+        }
+        PreviewUserVO author = new PreviewUserVO().setUid(user.getUid().toString())
+                .setNickName(user.getNickname())
+                .setAvatar(user.getAvatar())
+                .setIntro(user.getIntro());
+
+        VodVO vodVO = new VodVO()
+                .setCid(vodInfo.getCid())
+                .setBvId(vodInfo.getBvId())
+                .setCoverUrl(vodInfo.getCoverUrl())
+                .setTitle(vodInfo.getTitle())
+                .setGcType(vodInfo.getGcType())
+                .setPartition(vodInfo.getPartition())
+                .setSubPartition(vodInfo.getSubPartition())
+                .setLabels(vodInfo.getLabels())
+                .setDesc(vodInfo.getDesc())
+                .setQuality(Collections.singletonList(qualityVO));
+
+        BVodVO bVodVO = new BVodVO();
+        bVodVO.setAuthor(author)
+                .setBvId(vodInfo.getBvId())
+                .setMtime(vodInfo.getMtime())
+                .setVodList(Collections.singletonList(vodVO));
+        return bVodVO;
+    }
+
+    @Override
     public void updatePlayTime(String bvId, Long cid, Integer time) {
-        String uid = StpUtil.getLoginId(null);
-        if (Objects.isNull(uid)) {
+        String uid = StpUtil.getLoginId("");
+        if (StringUtils.isBlank(uid)) {
             return;
         }
-
 
         // 记录播放到的位置 -> 下次恢复播放
         Query query = new Query(Criteria.where("uid").is(uid).and("cid").is(cid));
@@ -800,7 +942,9 @@ public class VodServiceImpl implements VodService {
 
     @Override
     public void updatePlayCount(Long cid) {
-        mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)), new Update().inc("viewCount", 1), VodStatics.class);
+        mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                new Update().inc("viewCount", 1), VodStatics.class);
     }
 
 
@@ -814,15 +958,18 @@ public class VodServiceImpl implements VodService {
         Set<Object> cidSet = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
 
         // statics 数据查询
-        List<VodStatics> bVodStaticsList = mongoTemplate.find(new Query(Criteria.where("_id").in(cidSet)), VodStatics.class);
+        List<VodStatics> bVodStaticsList = mongoTemplate.find(new Query(Criteria.where("cid").in(cidSet)), VodStatics.class);
         Map<Long, VodStatics> vodStaticsMap = bVodStaticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatics.class))
                 .collect(Collectors.toMap(VodStatics::getCid, vodStatics -> vodStatics));
 
 
         // 查询 up 主信息
-        List<ObjectId> telList = bvodList.stream().map(bvod -> new ObjectId(bvod.getUid())).toList();
-        List<User> users = mongoTemplate.find(new Query(Criteria.where("_id").in(telList)), User.class);
-        Map<String, User> userMap = users.stream().collect(Collectors.toMap(user -> user.getUid().toString(), user -> user));
+        List<String> uidList = bvodList.stream().map(BVod::getUid).toList();
+
+        List<User> userList = mongoTemplate.find(new Query(Criteria.where("_id").in(uidList)), User.class);
+
+        Map<String, User> userMap = userList.stream()
+                .collect(Collectors.toMap(u -> u.getUid().toString(), user -> user));
 
 
         return bvodList.stream().map(bvod -> {
@@ -872,4 +1019,102 @@ public class VodServiceImpl implements VodService {
         }
         return thumbnails;
     }
+
+    @Override
+    public Page<VodVO> reviewPage(Integer pageNo, Integer pageSize, String status) {
+        Page<VodVO> page = new Page<VodVO>().setPageNo(pageNo).setPageSize(pageSize);
+        pageNo = Math.max(pageNo - 1, 0);
+        VodStatusEnum vodStatus = VodStatusEnum.parse(status);
+        Criteria criteria = Criteria.where("status").is(vodStatus);
+
+        // 查询出所有 bvod
+        Query pageQuery = new Query(criteria)
+                .with(Sort.by(Sort.Order.asc("ctime")))
+                .skip((long) pageNo * pageSize)
+                .limit(pageSize);
+        List<VodInfo> vodInfoList = mongoTemplate.find(pageQuery, VodInfo.class);
+        if (CollectionUtil.isEmpty(vodInfoList)) {
+            return page.setTotal(0L).setPage(new ArrayList<>());
+        }
+
+        // 构建出 vod info 视图列表
+        List<VodVO> vodVOList = buildVodVOList(vodInfoList);
+
+        Query totalQuery = new Query(criteria);
+        long count = mongoTemplate.count(totalQuery, BVod.class);
+
+        return page.setTotal(count).setPage(vodVOList);
+    }
+
+    @Override
+    public void interactive(String actionName, Long cid) {
+        VodInteractiveActionEnum actionEnum = VodInteractiveActionEnum.parse(actionName);
+        String uid = (String) StpUtil.getLoginId();
+        switch (actionEnum) {
+            case LIKE -> {
+                String likeKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(uid);
+                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid))) {
+                    redisTemplate.opsForSet().remove(likeKey, cid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("likeCount", -1), VodStatics.class);
+                } else {
+                    redisTemplate.opsForSet().add(likeKey, cid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("likeCount", 1), VodStatics.class);
+                }
+            }
+            case COIN -> {
+                String coinKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(cid.toString());
+                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, uid))) {
+                    redisTemplate.opsForSet().remove(coinKey, uid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("coinCount", -1), VodStatics.class);
+                } else {
+                    redisTemplate.opsForSet().add(coinKey, uid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("coinCount", 1), VodStatics.class);
+                }
+            }
+            case COLLECT -> {
+                String collectKey = UserCacheKeyEnum.SetKey.COLLECT_VOD_SET.concat(uid);
+                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid))) {
+                    redisTemplate.opsForSet().remove(collectKey, cid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("collectCount", -1), VodStatics.class);
+                } else {
+                    redisTemplate.opsForSet().add(collectKey, cid);
+                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                            new Update().inc("collectCount", 1), VodStatics.class);
+                }
+            }
+            case SHARE -> mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+                            .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                    new Update().inc("shareCount", 1), VodStatics.class);
+        }
+    }
+
+    @Override
+    public InteractionInfoVO interactionInfo(Long cid) {
+        String uid = (String) StpUtil.getLoginId("");
+        if (StringUtils.isBlank(uid)) {
+            return new InteractionInfoVO();
+        }
+
+        String likeKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(uid);
+        String coinKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(cid.toString());
+        String collectKey = UserCacheKeyEnum.SetKey.COLLECT_VOD_SET.concat(uid);
+
+        return new InteractionInfoVO()
+                .setLiked(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid)))
+                .setCoined(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, uid)))
+                .setCollected(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid)));
+    }
+
+
 }

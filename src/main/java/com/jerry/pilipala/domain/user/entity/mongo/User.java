@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -18,10 +19,10 @@ public class User {
     private ObjectId uid;
     private String tel;
     @TextIndexed
-    private String nickname;
-    private String intro;
-    private String avatar;
-    private List<String> permissions;
+    private String nickname = "unknown";
+    private String intro = "";
+    private String avatar = "";
+    private List<String> permission = new ArrayList<>();
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 
@@ -30,5 +31,5 @@ public class User {
             .setTel("123456")
             .setNickname("unknown")
             .setAvatar("")
-            .setPermissions(Lists.newArrayList());
+            .setPermission(Lists.newArrayList());
 }

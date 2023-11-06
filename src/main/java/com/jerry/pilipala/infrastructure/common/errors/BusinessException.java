@@ -41,7 +41,7 @@ public class BusinessException extends RuntimeException implements IResponse {
         return message;
     }
 
-    public static BusinessException raiseBusinessError(String message) {
+    public static BusinessException businessError(String message) {
         return new BusinessException(message, StandardResponse.ERROR);
     }
 }

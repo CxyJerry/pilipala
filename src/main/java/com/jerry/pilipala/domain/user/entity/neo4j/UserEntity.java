@@ -6,6 +6,7 @@ import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
 import org.springframework.data.neo4j.core.schema.Relationship;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -13,10 +14,9 @@ import java.util.List;
 @Accessors(chain = true)
 public class UserEntity {
     @Id
-    private String uid;
-    private String tel;
-    private String nickname;
-    private Long ctime;
+    private String uid = "";
+    private String tel = "";
+    private Long ctime = System.currentTimeMillis();
     @Relationship("Followed")
-    private List<UserEntity> followUps;
+    private List<UserEntity> followUps = new ArrayList<>();
 }

@@ -1,28 +1,31 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.date.DateUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jerry.pilipala.domain.vod.service.RecommendService;
-import com.jerry.pilipala.domain.vod.service.VodService;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.BVod;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
-import com.jerry.pilipala.infrastructure.enums.PartitionEnum;
-import com.jerry.pilipala.infrastructure.enums.VodOrderByEnum;
-import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
-import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.infrastructure.utils.Pair;
 import com.jerry.pilipala.application.vo.RecommendVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
-import org.apache.logging.log4j.util.Strings;
-import org.neo4j.driver.GraphDatabase;
-import org.springframework.data.domain.Sort;
+import com.jerry.pilipala.application.vo.user.PreviewUserVO;
+import com.jerry.pilipala.application.vo.vod.PreviewVodVO;
+import com.jerry.pilipala.domain.user.entity.mongo.User;
+import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
+import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
+import com.jerry.pilipala.domain.vod.service.RecommendService;
+import com.jerry.pilipala.domain.vod.service.VodService;
+import com.jerry.pilipala.infrastructure.enums.PartitionEnum;
+import com.jerry.pilipala.infrastructure.enums.Qn;
+import com.jerry.pilipala.infrastructure.utils.Page;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,82 +35,42 @@ public class RecommendServiceImpl implements RecommendService {
     private final ObjectMapper mapper;
 
     private final VodService vodService;
+    private final VodInfoRepository vodInfoRepository;
+    private final UserEntityRepository userEntityRepository;
 
 
     public RecommendServiceImpl(MongoTemplate mongoTemplate,
                                 RedisTemplate<String, Object> redisTemplate,
                                 ObjectMapper mapper,
-                                VodService vodService) {
+                                VodService vodService,
+                                VodInfoRepository vodInfoRepository,
+                                UserEntityRepository userEntityRepository) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.mapper = mapper;
         this.vodService = vodService;
+        this.vodInfoRepository = vodInfoRepository;
+        this.userEntityRepository = userEntityRepository;
     }
 
     @Override
-    public RecommendVO recommend(Integer swiperCount, Integer feedCount, Integer recommendCountPerPartition) {
-        List<PartitionEnum> allPartitions = PartitionEnum.partitions();
-        List<String> partitions = allPartitions
-                .stream()
-                .collect(Collectors.groupingBy(PartitionEnum::getPartition))
-                .keySet()
-                .stream()
-                .toList();
+    public RecommendVO recommend(Integer swiperCount, Integer feedCount) {
+        String uid = StpUtil.getLoginId("");
+        List<VodInfoEntity> swiperList = vodInfoRepository
+                .recommendVideosByContentBasedFiltering(swiperCount);
 
+        List<VodInfoEntity> firstList =
+                vodInfoRepository.recommendVideosByUserId(uid, feedCount);
+        if (firstList.isEmpty()) {
+            firstList = vodInfoRepository
+                    .recommendVideosByContentBasedFiltering(swiperCount);
+        }
 
         RecommendVO recommendVO = new RecommendVO();
-        List<PreviewBVodVO> swiper = randomPreviewBVodList(swiperCount, null, null);
-        List<String> swiperBvIds = swiper.stream().map(PreviewBVodVO::getBvId).toList();
-        List<PreviewBVodVO> first = randomPreviewBVodList(feedCount, null, swiperBvIds);
-        List<String> firstBvIds = new ArrayList<>(first.stream().map(PreviewBVodVO::getBvId).toList());
-        firstBvIds.addAll(swiperBvIds);
+        recommendVO.setSwiper(buildPreviewBVodList(swiperList))
+                .setFirst(buildPreviewBVodList(firstList));
 
-        List<Pair<String, List<PreviewBVodVO>>> recommends = new ArrayList<>();
-        partitions.forEach(p -> {
-            List<PreviewBVodVO> previewBVodVOS = randomPreviewBVodList(recommendCountPerPartition, p, firstBvIds);
-            Pair<String, List<PreviewBVodVO>> pair = new Pair<String, List<PreviewBVodVO>>().setKey(p).setValue(previewBVodVOS);
-            if (!previewBVodVOS.isEmpty()) {
-                recommends.add(pair);
-            }
-        });
-        recommendVO.setSwiper(swiper).setFirst(first).setTypes(recommends);
         return recommendVO;
-    }
-
-    private List<PreviewBVodVO> randomPreviewBVodList(Integer count, String partition, List<String> exclude) {
-        List<Object> bvIdList = new ArrayList<>();
-        // 填写了分区
-        List<Object> members;
-        if (Strings.isNotBlank(partition)) {
-            members = redisTemplate.opsForSet().randomMembers(partition, count);
-        }
-        // 未填写分区
-        else {
-            members = redisTemplate.opsForSet().randomMembers("all_bvod", count);
-        }
-        if (Objects.nonNull(members)) {
-            bvIdList.addAll(members);
-        }
-
-        // 查询出对应的 bvod
-        List<BVod> bvodList = mongoTemplate.find(new Query(Criteria.where("_id").in(bvIdList)), BVod.class);
-
-
-        // 分组查询出每个 bvid 的首个可播放的 vod 信息
-        Set<String> bvIdSet = bvodList.stream().map(BVod::getBvId).collect(Collectors.toSet());
-        Criteria vodInfoCriteria = Criteria.where("bvId").in(bvIdSet).and("status").is(VodStatusEnum.PASSED);
-        MatchOperation match = Aggregation.match(vodInfoCriteria);
-        SortOperation sort = Aggregation.sort(Sort.Direction.ASC, "mtime");
-        GroupOperation group = Aggregation.group("bvId").first("$$ROOT").as("firstDocument");
-        Aggregation aggregation = Aggregation.newAggregation(
-                match,
-                sort,
-                group,
-                Aggregation.replaceRoot().withValueOf("$firstDocument")
-        );
-        List<VodInfo> vodInfoList = mongoTemplate.aggregate(aggregation, "vod_info", VodInfo.class).getMappedResults();
-
-        return vodService.buildPreviewBVodList(vodInfoList);
     }
 
 
@@ -123,31 +86,62 @@ public class RecommendServiceImpl implements RecommendService {
                                                   String orderBy,
                                                   Integer pageNo,
                                                   Integer pageSize) {
+        List<VodInfoEntity> vodInfoEntities = vodInfoRepository
+                .recommendVideosByContentBasedFiltering(partition, Math.max(pageNo - 1, 0) * pageSize, pageSize);
+
+        Long total = vodInfoRepository.countVideosByPartition(partition);
         Page<PreviewBVodVO> page = new Page<>();
-        page.setPageNo(pageNo).setPageSize(pageSize);
-        SortOperation sort = Aggregation.sort(Sort.Direction.ASC, VodOrderByEnum.parse(orderBy));
-        Criteria criteria = Criteria.where("partition").is(partition)
-                .and("status").is(VodStatusEnum.PASSED);
+        List<PreviewBVodVO> data = this.buildPreviewBVodList(vodInfoEntities);
 
-        long count = mongoTemplate.count(new Query(criteria), VodInfo.class);
-        page.setTotal(count);
-        if (count == 0) {
-            return page.setPage(new ArrayList<>());
-        }
+        return page.setPageNo(pageNo).setPageSize(pageSize).setPage(data).setTotal(total);
+    }
 
-        MatchOperation match = Aggregation.match(criteria);
-        SkipOperation skip = Aggregation.skip((long) Math.max(pageNo - 1, 0) * pageSize);
-        LimitOperation limit = Aggregation.limit(pageSize);
-        Aggregation aggregation = Aggregation.newAggregation(
-                match,
-                sort,
-                skip,
-                limit
-        );
-        List<VodInfo> vodInfoList = mongoTemplate.aggregate(aggregation, "vod_info", VodInfo.class)
-                .getMappedResults();
+    public List<PreviewBVodVO> buildPreviewBVodList(List<VodInfoEntity> vodInfoEntities) {
+        List<String> uidList = vodInfoEntities.stream().map(VodInfoEntity::getAuthorId).toList();
+        List<User> userList = mongoTemplate.find(new Query(Criteria.where("_id").in(uidList)), User.class);
+        Map<String, User> userEntityMap = userList.stream()
+                .collect(Collectors.toMap(u -> u.getUid().toString(), u -> u));
 
-        List<PreviewBVodVO> previewBVodVOS = vodService.buildPreviewBVodList(vodInfoList);
-        return page.setPage(previewBVodVOS);
+        List<Long> cidList = vodInfoEntities.stream().map(VodInfoEntity::getCid).toList();
+
+        List<VodStatics> vodStatics = mongoTemplate.find(new Query(Criteria.where("cid").in(cidList)
+                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                VodStatics.class);
+        Map<Long, VodStatics> vodStaticsMap = vodStatics.stream().collect(Collectors.toMap(VodStatics::getCid, v -> v));
+
+        return vodInfoEntities.stream().map(vodInfoEntity -> {
+                    // 创建作者预览模型
+                    User user = userEntityMap.get(vodInfoEntity.getAuthorId());
+                    PreviewUserVO author = new PreviewUserVO().setUid(user.getUid().toString())
+                            .setNickName(user.getNickname())
+                            .setAvatar(user.getAvatar())
+                            .setIntro(user.getIntro());
+                    // 创建视频预览模型
+                    // 设置预览视频
+                    String url = "/file/video/%s/%s/1".formatted(vodInfoEntity.getCid(), Qn._PREVIEW.getDescription());
+                    PreviewVodVO preview = new PreviewVodVO().setCid(vodInfoEntity.getCid())
+                            .setUrl(url)
+                            .setName(vodInfoEntity.getTitle());
+                    VodStatics statics = vodStaticsMap.getOrDefault(vodInfoEntity.getCid(), new VodStatics());
+                    // 组装
+                    return new PreviewBVodVO()
+                            .setBvId(vodInfoEntity.getBvId())
+                            .setCoverUrl(vodInfoEntity.getCoverUrl())
+                            .setTitle(vodInfoEntity.getTitle())
+                            .setDesc(vodInfoEntity.getDesc())
+                            .setPartition(vodInfoEntity.getPartition())
+                            .setViewCount(vodInfoEntity.getViewCount() + statics.getViewCount())
+                            .setLikeCount(vodInfoEntity.getLikeCount() + statics.getLikeCount())
+                            .setBarrageCount(vodInfoEntity.getBarrageCount() + statics.getBarrageCount())
+                            .setCommentCount(vodInfoEntity.getCommentCount() + statics.getCommentCount())
+                            .setCoinCount(vodInfoEntity.getCoinCount() + statics.getCoinCount())
+                            .setCollectCount(vodInfoEntity.getCollectCount() + statics.getCollectCount())
+                            .setShareCount(vodInfoEntity.getShareCount() + statics.getShareCount())
+                            .setAuthor(author)
+                            .setPreview(preview);
+
+                }
+        ).toList();
+
     }
 }

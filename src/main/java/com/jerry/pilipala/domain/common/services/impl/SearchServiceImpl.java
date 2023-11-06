@@ -1,14 +1,13 @@
 package com.jerry.pilipala.domain.common.services.impl;
 
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
-import com.jerry.pilipala.infrastructure.enums.SearchTypeEnum;
-import com.jerry.pilipala.domain.user.entity.mongo.User;
-
-import com.jerry.pilipala.domain.common.services.SearchService;
-import com.jerry.pilipala.domain.user.service.UserService;
-import com.jerry.pilipala.domain.vod.service.VodService;
-import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.application.vo.SearchResultVO;
+import com.jerry.pilipala.domain.common.services.SearchService;
+import com.jerry.pilipala.domain.user.entity.mongo.User;
+import com.jerry.pilipala.domain.user.service.UserService;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
+import com.jerry.pilipala.domain.vod.service.VodService;
+import com.jerry.pilipala.infrastructure.enums.SearchTypeEnum;
+import com.jerry.pilipala.infrastructure.utils.Page;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;

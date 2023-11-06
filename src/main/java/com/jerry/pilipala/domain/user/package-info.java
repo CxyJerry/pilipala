@@ -1,1 +1,0 @@
-package com.jerry.pilipala.domain.user;

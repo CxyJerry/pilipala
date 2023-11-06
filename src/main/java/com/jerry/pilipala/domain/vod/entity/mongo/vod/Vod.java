@@ -1,7 +1,7 @@
 package com.jerry.pilipala.domain.vod.entity.mongo.vod;
 
-import com.jerry.pilipala.domain.vod.entity.mongo.media.Container;
 import com.jerry.pilipala.domain.vod.entity.mongo.media.Audio;
+import com.jerry.pilipala.domain.vod.entity.mongo.media.Container;
 import com.jerry.pilipala.domain.vod.entity.mongo.media.Video;
 import lombok.Data;
 import lombok.experimental.Accessors;

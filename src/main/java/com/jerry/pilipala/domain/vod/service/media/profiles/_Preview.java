@@ -1,7 +1,7 @@
 package com.jerry.pilipala.domain.vod.service.media.profiles;
 
-import com.jerry.pilipala.infrastructure.enums.video.VideoFormatEnum;
 import com.jerry.pilipala.domain.vod.service.media.encoder.AvcPreview;
+import com.jerry.pilipala.infrastructure.enums.video.VideoFormatEnum;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor

@@ -1,21 +1,19 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
+import cn.hutool.core.date.DateUtil;
+import com.jerry.pilipala.application.dto.CommentDTO;
+import com.jerry.pilipala.application.vo.CommentVO;
+import com.jerry.pilipala.application.vo.user.PreviewUserVO;
+import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
-import com.jerry.pilipala.domain.vod.entity.neo4j.CommentEntity;
-import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.Comment;
 import com.jerry.pilipala.domain.vod.repository.CommentRepository;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
 import com.jerry.pilipala.domain.vod.service.CommentService;
-import com.jerry.pilipala.application.dto.CommentDTO;
-import com.jerry.pilipala.domain.user.entity.mongo.User;
-
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.Comment;
+import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.application.vo.CommentVO;
-import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,7 +22,10 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,92 +49,40 @@ public class CommentServiceImpl implements CommentService {
     public CommentVO post(CommentDTO commentDTO) {
         String uid = (String) StpUtil.getLoginId();
 
-        Comment comment = new Comment().setUid(uid)
-                .setParentId(commentDTO.getParentCommentId())
-                .setCid(commentDTO.getCid())
+        // 查询作者信息
+        User author = mongoTemplate.findById(new ObjectId(uid), User.class);
+
+        Comment parentComment;
+
+        if (StringUtils.isNotBlank(commentDTO.getParentCommentId())) {
+            parentComment = mongoTemplate
+                    .findById(new ObjectId(commentDTO.getParentCommentId()), Comment.class);
+            if (Objects.isNull(parentComment)) {
+                throw BusinessException.businessError("回复异常，该评论不存在");
+            }
+            parentComment.setHasChild(true);
+            mongoTemplate.save(parentComment);
+        }
+
+        if (Objects.isNull(author)) {
+            throw BusinessException.businessError("用户不存在");
+        }
+
+        Comment comment = new Comment()
+                .setUid(author.getUid().toString())
                 .setContent(commentDTO.getContent())
-                .setChildCount(0);
+                .setCid(commentDTO.getCid())
+                .setParentId(commentDTO.getParentCommentId());
+
         comment = mongoTemplate.save(comment);
 
-        if (StringUtils.isNotBlank(commentDTO.getParentCommentId())) {
-            Update update = new Update();
-            update.inc("childCount", 1);
-            mongoTemplate.findAndModify(
-                    new Query(Criteria.where("_id").is(comment.getParentId())),
-                    update, Comment.class);
-        }
+        // 更新评论数
+        mongoTemplate.upsert(new Query(Criteria.where("_id").is(Long.parseLong(commentDTO.getCid()))
+                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
+                new Update().inc("commentCount", 1), VodStatics.class);
 
-        // 查询作者信息
-        User author = mongoTemplate.findOne(new Query(
-                        Criteria.where("_id").is(new ObjectId(uid))),
-                User.class);
-        if (Objects.isNull(author)) {
-            author = User.UNKNOWN;
-        }
 
-        CommentEntity parentCommentEntity = null;
-
-        if (StringUtils.isNotBlank(commentDTO.getParentCommentId())) {
-            parentCommentEntity = commentRepository.findById(commentDTO.getParentCommentId())
-                    .orElse(null);
-        }
-
-        VodInfoEntity vodInfoEntity = vodInfoRepository.findById(Long.parseLong(commentDTO.getCid()))
-                .orElse(null);
-
-        UserEntity userEntity = userEntityRepository.findById(comment.getUid()).orElse(null);
-
-        // 保存 neo4j
-        CommentEntity commentEntity = new CommentEntity();
-        commentEntity.setId(comment.getId().toString())
-                .setParentComment(parentCommentEntity)
-                .setVod(vodInfoEntity)
-                .setContent(comment.getContent())
-                .setAuthor(userEntity)
-                .setCtime(comment.getCtime());
-        commentRepository.save(commentEntity);
-        return buildCommentVO(comment, author);
-    }
-
-    @Override
-    public Page<CommentVO> get(String cid,
-                               String parentCommentId,
-                               Integer pageNo,
-                               Integer pageSize) {
-        Criteria criteria = Criteria.where("cid").is(cid);
-
-        if (StringUtils.isNotBlank(parentCommentId)) {
-            criteria.and("parentId").is(parentCommentId);
-        } else {
-            criteria.and("parentId").is("");
-        }
-        // 查询分页数据
-        Query query = new Query(criteria).skip((long) Math.max(0, pageNo - 1) * pageSize);
-        List<Comment> commentList = mongoTemplate.find(query, Comment.class);
-
-        Set<String> uidSet = commentList.stream().map(Comment::getUid).collect(Collectors.toSet());
-        List<User> userList = mongoTemplate.find(new Query(Criteria.where("_id").in(uidSet)), User.class);
-        Map<String, User> userMap = userList.stream().collect(Collectors.toMap(u -> u.getUid().toString(), u -> u));
-
-        List<CommentVO> list = commentList.stream().map(comment -> {
-            // 查询作者信息
-            User author = userMap.getOrDefault(comment.getUid(), null);
-            if (Objects.isNull(author)) {
-                author = User.UNKNOWN;
-            }
-            return buildCommentVO(comment, author);
-        }).toList();
-
-        // 查询总数
-        long total = mongoTemplate.count(new Query(criteria), Comment.class);
-        return new Page<CommentVO>()
-                .setPageNo(pageNo)
-                .setPageSize(pageSize)
-                .setTotal(total)
-                .setPage(list);
-    }
-
-    private CommentVO buildCommentVO(Comment comment, User author) {
+        // 构建评论模型
         CommentVO commentVO = new CommentVO();
 
         PreviewUserVO authorPreviewVO = new PreviewUserVO().setUid(author.getUid().toString())
@@ -145,7 +94,65 @@ public class CommentServiceImpl implements CommentService {
                 .setCid(comment.getCid())
                 .setAuthor(authorPreviewVO)
                 .setContent(comment.getContent())
-                .setChildCount(comment.getChildCount())
+                .setHasChild(false)
                 .setDate(comment.getCtime());
+    }
+
+    @Override
+    public Page<CommentVO> get(String cid,
+                               String parentCommentId,
+                               Integer pageNo,
+                               Integer pageSize) {
+        List<Comment> comments;
+        long total;
+        if (StringUtils.isNotBlank(parentCommentId)) {
+            comments = mongoTemplate.find(
+                    new Query(Criteria.where("parentId")
+                            .is(parentCommentId))
+                            .skip((long) Math.max(0, pageNo - 1) * pageSize)
+                            .limit(pageSize),
+                    Comment.class);
+            total = mongoTemplate.count(
+                    new Query(Criteria.where("parentId")
+                            .is(parentCommentId)),
+                    Comment.class);
+        } else {
+            comments = mongoTemplate.find(
+                    new Query(Criteria.where("cid")
+                            .is(cid).and("parentId").is(""))
+                            .skip((long) Math.max(0, pageNo - 1) * pageSize)
+                            .limit(pageSize),
+                    Comment.class);
+            total = mongoTemplate.count(
+                    new Query(Criteria.where("cid")
+                            .is(cid).and("parentId").is("")),
+                    Comment.class);
+        }
+        // 获取全部评论作者信息
+        List<String> uidList = comments.stream().map(Comment::getUid).toList();
+        List<User> userList = mongoTemplate.find(new Query(Criteria.where("_id").in(uidList)), User.class);
+        Map<String, User> userMap = userList.stream()
+                .collect(Collectors.toMap(u -> u.getUid().toString(), u -> u));
+
+        List<CommentVO> page = comments.stream().map(comment -> {
+            User user = userMap.get(comment.getUid());
+            PreviewUserVO author = new PreviewUserVO();
+            author.setUid(user.getUid().toString())
+                    .setAvatar(user.getAvatar())
+                    .setIntro(user.getIntro())
+                    .setNickName(user.getNickname());
+            return new CommentVO().setId(comment.getId().toString())
+                    .setContent(comment.getContent())
+                    .setDate(comment.getCtime())
+                    .setCid(comment.getCid())
+                    .setAuthor(author)
+                    .setHasChild(comment.getHasChild());
+        }).toList();
+
+        return new Page<CommentVO>()
+                .setPage(page)
+                .setTotal(total)
+                .setPageNo(pageNo)
+                .setPageSize(pageSize);
     }
 }

@@ -16,7 +16,7 @@ public class Comment {
     private String uid;
     private String cid;
     private String content;
-    private Integer childCount = 0;
+    private Boolean hasChild = false;
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 }

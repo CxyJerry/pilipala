@@ -8,6 +8,6 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = true)
 @Accessors(chain = true)
 public class UserVO extends PreviewUserVO {
-    private Long fansCount = 0L;
-    private Long followCount = 0L;
+    private int fansCount = 0;
+    private int followCount = 0;
 }
