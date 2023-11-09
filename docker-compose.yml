@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /home/pilipala/config:/
+      - /home/pilipala/:/
       - /home/pilipala/log:/usr/log/
       - /home/pilipala/upload-dir:/usr/pilipala/target/upload-dir
     networks:
