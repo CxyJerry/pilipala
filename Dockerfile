@@ -1,7 +1,7 @@
 FROM linuxserver/ffmpeg
 ARG VERSION="0.0.1-SNAPSHOT"
 
-WORKDIR /
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y openjdk-17-jdk
 
