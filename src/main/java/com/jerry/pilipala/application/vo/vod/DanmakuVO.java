@@ -1,4 +1,4 @@
-package com.jerry.pilipala.application.vo;
+package com.jerry.pilipala.application.vo.vod;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

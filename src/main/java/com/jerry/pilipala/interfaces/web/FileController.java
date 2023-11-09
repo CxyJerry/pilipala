@@ -1,14 +1,14 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.jerry.pilipala.infrastructure.annotations.FileType;
-import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
-import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
-import com.jerry.pilipala.infrastructure.enums.LimitType;
 import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
+import com.jerry.pilipala.infrastructure.annotations.FileType;
+import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
+import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
+import com.jerry.pilipala.infrastructure.enums.LimitType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +32,7 @@ public class FileController {
      * @param cid   预上传生产的稿件id
      * @return success
      */
-    @SaCheckPermission("creator")
+    @SaCheckPermission("post-vod")
 //    @RateLimiter(key = "vod-limit:upload", seconds = 60, count = 3, message = "上传速度过快，请稍后再试试吧", limitType = LimitType.IP)
     @PostMapping("/upload")
     public CommonResponse<?> upload(@RequestParam("video") @NotNull(message = "请选择视频文件") MultipartFile video,
@@ -48,7 +48,7 @@ public class FileController {
      * @return 文件地址
      */
     @FileType(types = {"png", "jpg"})
-//    @Auth(permission = "creator")
+//    @Auth(permission = "post-vod")
     @PostMapping("/upload-cover")
     public CommonResponse<?> uploadCover(@RequestParam("cover") @NotNull(message = "文件不得为空") MultipartFile cover) {
         String uploadFilename = fileService.upload(cover);

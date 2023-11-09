@@ -1,7 +1,6 @@
 package com.jerry.pilipala.infrastructure.enums;
 
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
-import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
 import lombok.Getter;
 
 @Getter
@@ -20,6 +19,6 @@ public enum UserRelationEnum {
                 return value;
             }
         }
-        throw BusinessException.raiseBusinessError("关系状态不存在");
+        throw BusinessException.businessError("关系状态不存在");
     }
 }

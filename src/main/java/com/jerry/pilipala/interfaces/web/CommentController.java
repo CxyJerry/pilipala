@@ -1,11 +1,11 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.application.dto.CommentDTO;
+import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.domain.vod.service.CommentService;
+import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.application.vo.CommentVO;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

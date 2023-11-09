@@ -9,5 +9,6 @@ import java.util.List;
 @Accessors(chain = true)
 public class UserInfoBO {
     private String uid;
-    private List<String> permissions;
+    private String roleId;
+    private List<String> permissionIdList;
 }

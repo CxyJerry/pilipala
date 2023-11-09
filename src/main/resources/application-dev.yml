@@ -1,0 +1,42 @@
+file:
+  work-dir: D:/MyDataArea/OpenSource/pilipala/target/upload-dir
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/pilipala
+    neo4j:
+      database: neo4j
+  redis:
+    host: localhost
+    port: 6379
+  servlet:
+    multipart:
+      max-request-size: 100MB
+      max-file-size: 100MB
+  session:
+    timeout: 3600
+  neo4j:
+    uri: bolt://localhost:7687
+    authentication:
+      username: neo4j
+      password: jerry666
+    connection-timeout: 60s
+    pool:
+      max-connection-lifetime: 24h
+logging:
+  level:
+    org.springframework.data.mongodb.core: debug
+  file:
+    path: ./log/
+
+sa-token:
+  token-name: 'pilipala'
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: false
+  is-share: false
+  token-style: uuid
+  is-log: true
+sms:
+  access-key: 7moGTMnPKZDcXF9RNGrujK3fY

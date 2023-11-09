@@ -1,8 +1,8 @@
 package com.jerry.pilipala.domain.vod.service.media;
 
 
-import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
+import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 
 import java.util.List;
 

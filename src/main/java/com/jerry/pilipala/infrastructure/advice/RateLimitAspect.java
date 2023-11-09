@@ -1,9 +1,9 @@
 package com.jerry.pilipala.infrastructure.advice;
 
+import com.jerry.pilipala.domain.common.services.LimitManager;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.domain.common.services.LimitManager;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;

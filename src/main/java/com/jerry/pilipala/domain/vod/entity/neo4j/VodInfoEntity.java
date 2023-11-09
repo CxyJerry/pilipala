@@ -16,8 +16,10 @@ public class VodInfoEntity {
     @Id
     private Long cid;
     private String bvId;
-    @Relationship(type = "CreatedBy")
-    private UserEntity author;
+    private String authorId;
+    private String coverUrl;
+    private String title;
+    private String desc;
     private String gcType;
     private String partition;
     private String subPartition;
@@ -30,4 +32,7 @@ public class VodInfoEntity {
     private Integer collectCount = 0;
     private Integer shareCount = 0;
     private Long ctime;
+
+    @Relationship(type = "CreatedBy")
+    private UserEntity author;
 }

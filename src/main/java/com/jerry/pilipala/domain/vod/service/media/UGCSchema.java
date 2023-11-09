@@ -1,12 +1,10 @@
 package com.jerry.pilipala.domain.vod.service.media;
 
 import com.google.common.collect.Lists;
-
+import com.jerry.pilipala.domain.vod.entity.mongo.media.Video;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.service.media.profiles.*;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
-
-import com.jerry.pilipala.domain.vod.entity.mongo.media.Video;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

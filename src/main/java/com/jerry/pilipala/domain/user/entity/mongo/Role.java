@@ -7,17 +7,18 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
-@Document("fans")
 @Accessors(chain = true)
-public class Fans {
+@Document("role")
+public class Role {
     @Id
     private ObjectId id;
-    @Indexed
-    private String fansId;
-    @Indexed
-    private String upId;
-    private Byte deleted = 0x01;
+    @Indexed(unique = true)
+    private String name = "";
+    private List<String> permissionIds = new ArrayList<>();
+    private Boolean deleted = false;
     private Long ctime = System.currentTimeMillis();
-    private Long mtime = System.currentTimeMillis();
 }

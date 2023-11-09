@@ -1,9 +1,9 @@
 package com.jerry.pilipala.domain.vod.service.media.encoder;
 
+import com.jerry.pilipala.domain.vod.entity.mongo.media.Video;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.infrastructure.enums.Qn;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
-import com.jerry.pilipala.domain.vod.entity.mongo.media.Video;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;

@@ -1,11 +1,11 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.jerry.pilipala.application.vo.user.UserVO;
+import com.jerry.pilipala.domain.user.service.FansService;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
-import com.jerry.pilipala.domain.user.service.FansService;
-import com.jerry.pilipala.application.vo.user.UserVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 

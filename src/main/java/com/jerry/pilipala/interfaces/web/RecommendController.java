@@ -1,12 +1,12 @@
 package com.jerry.pilipala.interfaces.web;
 
+import com.jerry.pilipala.application.vo.vod.RecommendVO;
+import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
+import com.jerry.pilipala.domain.vod.service.RecommendService;
 import com.jerry.pilipala.infrastructure.annotations.IgnoreLog;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.PartitionEnum;
-import com.jerry.pilipala.domain.vod.service.RecommendService;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.application.vo.RecommendVO;
-import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,12 +35,8 @@ public class RecommendController {
 
                                        @RequestParam("feed_count")
                                        @Max(value = 10, message = "非法数量")
-                                       @Min(value = 1, message = "非法数量") Integer feedCount,
-
-                                       @RequestParam("recommend_count_per_part")
-                                       @Max(value = 10, message = "非法数量")
-                                       @Min(value = 1, message = "非法数量") Integer recommendCountPerPart) {
-        RecommendVO recommendVO = recommendService.recommend(swiperCount, feedCount, recommendCountPerPart);
+                                       @Min(value = 1, message = "非法数量") Integer feedCount) {
+        RecommendVO recommendVO = recommendService.recommend(swiperCount, feedCount);
         return CommonResponse.success(recommendVO);
     }
 

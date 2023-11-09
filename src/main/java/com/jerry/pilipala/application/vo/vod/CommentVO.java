@@ -1,4 +1,4 @@
-package com.jerry.pilipala.application.vo;
+package com.jerry.pilipala.application.vo.vod;
 
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import lombok.Data;
@@ -11,6 +11,6 @@ public class CommentVO {
     private String cid;
     private PreviewUserVO author;
     private String content;
-    private Integer childCount;
+    private Boolean hasChild;
     private Long date;
 }

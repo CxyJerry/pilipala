@@ -3,16 +3,16 @@ package com.jerry.pilipala.domain.vod.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-
-import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
+import com.jerry.pilipala.application.vo.vod.PreUploadVO;
+import com.jerry.pilipala.application.vo.bvod.BVodVO;
+import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
+import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
+import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
+import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import com.jerry.pilipala.application.vo.PreUploadVO;
-import com.jerry.pilipala.application.vo.bvod.BVodVO;
-import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
-import com.jerry.pilipala.application.vo.vod.VodVO;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -45,7 +45,7 @@ public interface VodService {
      *
      * @param videoPostDTO 稿件信息
      */
-    void add(VideoPostDTO videoPostDTO);
+    void post(VideoPostDTO videoPostDTO);
 
     /**
      * 规划需要转出的视频规格
@@ -105,4 +105,12 @@ public interface VodService {
 
 
     VodThumbnails thumbnails(Long cid);
+
+    Page<VodVO> reviewPage(Integer pageNo, Integer pageSize, String status);
+
+    void interactive(String actionName,Long cid);
+
+    InteractionInfoVO interactionInfo(Long cid);
+
+    BVodVO sdVideo(Long cid);
 }
