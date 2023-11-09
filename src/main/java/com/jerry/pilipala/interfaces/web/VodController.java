@@ -4,7 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-import com.jerry.pilipala.application.vo.PreUploadVO;
+import com.jerry.pilipala.application.vo.vod.PreUploadVO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;

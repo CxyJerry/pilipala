@@ -14,5 +14,6 @@ public class Permission {
     private ObjectId id;
     private String name;
     private String value;
+    private Boolean deleted = false;
     private Long ctime = System.currentTimeMillis();
 }

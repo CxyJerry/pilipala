@@ -1,4 +1,4 @@
-package com.jerry.pilipala.application.vo;
+package com.jerry.pilipala.application.vo.vod;
 
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import lombok.Data;

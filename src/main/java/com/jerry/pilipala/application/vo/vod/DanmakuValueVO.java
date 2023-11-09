@@ -1,4 +1,4 @@
-package com.jerry.pilipala.application.vo;
+package com.jerry.pilipala.application.vo.vod;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.jerry.pilipala.infrastructure.utils.serializer.DanmakuValueVOSerializer;

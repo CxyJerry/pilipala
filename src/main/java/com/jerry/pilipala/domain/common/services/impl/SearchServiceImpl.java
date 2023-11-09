@@ -1,6 +1,6 @@
 package com.jerry.pilipala.domain.common.services.impl;
 
-import com.jerry.pilipala.application.vo.SearchResultVO;
+import com.jerry.pilipala.application.vo.vod.SearchResultVO;
 import com.jerry.pilipala.domain.common.services.SearchService;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.service.UserService;

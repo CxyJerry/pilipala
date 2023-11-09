@@ -4,21 +4,16 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Accessors(chain = true)
-@Document("role")
-public class Role {
+@Document("path")
+public class Path {
     @Id
     private ObjectId id;
-    @Indexed(unique = true)
-    private String name = "";
-    private List<String> permissionIds = new ArrayList<>();
+    private String path;
+    private String permissionId;
     private Boolean deleted = false;
     private Long ctime = System.currentTimeMillis();
 }

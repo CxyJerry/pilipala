@@ -22,7 +22,7 @@ public class User {
     private String nickname = "unknown";
     private String intro = "";
     private String avatar = "";
-    private List<String> permission = new ArrayList<>();
+    private String roleId = "";
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 
@@ -31,5 +31,5 @@ public class User {
             .setTel("123456")
             .setNickname("unknown")
             .setAvatar("")
-            .setPermission(Lists.newArrayList());
+            .setRoleId("");
 }

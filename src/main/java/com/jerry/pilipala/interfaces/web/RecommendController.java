@@ -1,6 +1,6 @@
 package com.jerry.pilipala.interfaces.web;
 
-import com.jerry.pilipala.application.vo.RecommendVO;
+import com.jerry.pilipala.application.vo.vod.RecommendVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.domain.vod.service.RecommendService;
 import com.jerry.pilipala.infrastructure.annotations.IgnoreLog;

@@ -2,8 +2,8 @@ package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.DanmakuDTO;
-import com.jerry.pilipala.application.vo.DanmakuResponse;
-import com.jerry.pilipala.application.vo.DanmakuValueVO;
+import com.jerry.pilipala.application.vo.vod.DanmakuResponse;
+import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.domain.vod.service.DanmakuSseManager;
 import org.apache.commons.lang3.StringUtils;

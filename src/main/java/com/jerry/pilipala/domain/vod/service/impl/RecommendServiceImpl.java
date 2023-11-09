@@ -3,7 +3,7 @@ package com.jerry.pilipala.domain.vod.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jerry.pilipala.application.vo.RecommendVO;
+import com.jerry.pilipala.application.vo.vod.RecommendVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.PreviewVodVO;

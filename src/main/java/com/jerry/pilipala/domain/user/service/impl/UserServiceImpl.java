@@ -8,7 +8,9 @@ import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.domain.common.services.SmsService;
 import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.user.entity.mongo.Apply;
 import com.jerry.pilipala.domain.user.entity.mongo.Permission;
+import com.jerry.pilipala.domain.user.entity.mongo.Role;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
@@ -16,8 +18,10 @@ import com.jerry.pilipala.domain.user.service.PermissionService;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
+import com.jerry.pilipala.infrastructure.enums.ApplyStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.CaptchaUtil;
+import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -37,21 +41,18 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final MongoTemplate mongoTemplate;
-
     private final SmsService smsService;
     private final UserEntityRepository userEntityRepository;
     private final ObjectMapper mapper;
-
-    private final PermissionService permissionService;
     private final MessageService messageService;
     private final HttpServletRequest request;
+
 
     public UserServiceImpl(RedisTemplate<String, Object> redisTemplate,
                            MongoTemplate mongoTemplate,
                            SmsService smsService,
                            UserEntityRepository userEntityRepository,
                            ObjectMapper mapper,
-                           PermissionService permissionService,
                            MessageService messageService,
                            HttpServletRequest request) {
         this.redisTemplate = redisTemplate;
@@ -59,7 +60,6 @@ public class UserServiceImpl implements UserService {
         this.smsService = smsService;
         this.userEntityRepository = userEntityRepository;
         this.mapper = mapper;
-        this.permissionService = permissionService;
         this.messageService = messageService;
         this.request = request;
     }
@@ -106,10 +106,21 @@ public class UserServiceImpl implements UserService {
         messageService.send("", finalUser.getUid().toString(), msg);
 //        });
 
+        String roleId = user.getRoleId();
+        Role role;
+        if (StringUtils.isBlank(roleId)) {
+            role = new Role();
+        } else {
+            role = mongoTemplate.findById(new ObjectId(roleId), Role.class);
+            if (Objects.isNull(role)) {
+                role = new Role();
+            }
+        }
 
         UserInfoBO userInfoBO = new UserInfoBO()
                 .setUid(user.getUid().toString())
-                .setPermissions(user.getPermission());
+                .setRoleId(roleId)
+                .setPermissionIdList(role.getPermissionIds());
         StpUtil.getSession().set("user-info", userInfoBO);
 
         return userVO(user.getUid().toString(), false);
@@ -192,15 +203,22 @@ public class UserServiceImpl implements UserService {
         return userVoMap.values().stream().toList();
     }
 
-    public void grantRole(String uid, String roleId) {
-        User user = mongoTemplate.findById(new ObjectId(uid), User.class);
-        if (Objects.isNull(user)) {
-            throw BusinessException.businessError("用户不存在");
-        }
-        List<String> permissions = permissionService
-                .permissions(roleId).stream().map(Permission::getValue).toList();
-        user.setPermission(permissions);
-        mongoTemplate.save(user);
-        redisTemplate.delete(UserCacheKeyEnum.StringKey.USER_ENTITY_KEY.concat(uid));
+    @Override
+    public Page<UserVO> page(Integer pageNo, Integer pageSize) {
+        List<User> userList = mongoTemplate.find(
+                new Query()
+                        .skip((long) Math.max(0, pageNo - 1) * pageSize)
+                        .limit(pageSize),
+                User.class);
+        List<UserVO> userVOList = userList
+                .stream()
+                .map(user -> userVO(user.getUid().toString(), false))
+                .toList();
+        long total = mongoTemplate.count(new Query(), User.class);
+        return new Page<UserVO>()
+                .setPageNo(pageNo)
+                .setPageSize(pageSize)
+                .setTotal(total)
+                .setPage(userVOList);
     }
 }

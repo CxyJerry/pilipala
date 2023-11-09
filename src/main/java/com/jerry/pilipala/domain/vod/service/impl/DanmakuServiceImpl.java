@@ -3,7 +3,7 @@ package com.jerry.pilipala.domain.vod.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.application.dto.DanmakuDTO;
-import com.jerry.pilipala.application.vo.DanmakuValueVO;
+import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;

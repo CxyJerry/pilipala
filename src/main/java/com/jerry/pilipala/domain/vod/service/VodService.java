@@ -3,7 +3,7 @@ package com.jerry.pilipala.domain.vod.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-import com.jerry.pilipala.application.vo.PreUploadVO;
+import com.jerry.pilipala.application.vo.vod.PreUploadVO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;

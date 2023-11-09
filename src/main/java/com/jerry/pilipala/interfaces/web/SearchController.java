@@ -1,6 +1,6 @@
 package com.jerry.pilipala.interfaces.web;
 
-import com.jerry.pilipala.application.vo.SearchResultVO;
+import com.jerry.pilipala.application.vo.vod.SearchResultVO;
 import com.jerry.pilipala.domain.common.services.SearchService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;

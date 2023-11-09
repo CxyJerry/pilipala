@@ -50,4 +50,5 @@ public interface VodInfoRepository extends Neo4jRepository<VodInfoEntity, Long> 
     List<VodInfoEntity> searchVodByContentBasedFiltering(String partition, String searchQuery, int skip, int limit);
 
 
+    VodInfoEntity findByCid(Long cid);
 }

@@ -1,7 +1,6 @@
 package com.jerry.pilipala.application.vo.vod;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.jerry.pilipala.application.vo.QualityVO;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -31,5 +30,6 @@ public class VodVO {
     private Integer shareCount = 0;
     private List<QualityVO> quality;
     private Long onlineCount;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long mtime = System.currentTimeMillis();
 }

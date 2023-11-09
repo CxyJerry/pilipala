@@ -17,7 +17,7 @@ spring:
   session:
     timeout: 3600
   neo4j:
-    uri: bolt://47.104.7.229:7687
+    uri: bolt://localhost:7687
     authentication:
       username: neo4j
       password: jerry666

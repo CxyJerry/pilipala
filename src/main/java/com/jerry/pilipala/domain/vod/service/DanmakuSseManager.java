@@ -1,7 +1,7 @@
 package com.jerry.pilipala.domain.vod.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jerry.pilipala.application.vo.DanmakuValueVO;
+import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

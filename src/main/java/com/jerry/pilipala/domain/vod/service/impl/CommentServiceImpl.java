@@ -3,7 +3,7 @@ package com.jerry.pilipala.domain.vod.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.application.dto.CommentDTO;
-import com.jerry.pilipala.application.vo.CommentVO;
+import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;

@@ -3,7 +3,7 @@ package com.jerry.pilipala.infrastructure.utils.serializer;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.jerry.pilipala.application.vo.DanmakuValueVO;
+import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 
 import java.io.IOException;
 

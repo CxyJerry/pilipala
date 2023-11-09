@@ -7,10 +7,11 @@ import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
-import com.jerry.pilipala.application.vo.PreUploadVO;
-import com.jerry.pilipala.application.vo.QualityVO;
+import com.jerry.pilipala.application.vo.vod.PreUploadVO;
+import com.jerry.pilipala.application.vo.vod.QualityVO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
@@ -18,6 +19,8 @@ import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
 import com.jerry.pilipala.application.vo.vod.PreviewVodVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.user.entity.mongo.Permission;
+import com.jerry.pilipala.domain.user.entity.mongo.Role;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
@@ -73,7 +76,6 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ResourceUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
@@ -90,8 +92,8 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class VodServiceImpl implements VodService {
-    private FFprobe fFprobe;
-    private FFmpeg fFmpeg;
+    private final FFprobe fFprobe;
+    private final FFmpeg fFmpeg;
 
     private final ObjectMapper mapper;
 
@@ -113,11 +115,6 @@ public class VodServiceImpl implements VodService {
 
     private final UserEntityRepository userEntityRepository;
     private final MessageService messageService;
-
-
-    public static boolean windows() {
-        return System.getProperty("os.name").toLowerCase().contains("windows");
-    }
 
 
     public VodServiceImpl(ObjectMapper mapper,
@@ -143,19 +140,9 @@ public class VodServiceImpl implements VodService {
     }
 
     {
-        File ffprobeFile;
-        File ffmpegFile;
         try {
-            String ffprobeResourcesPath = "classpath:bin/ffprobe";
-            String ffmpegResourcesPath = "classpath:bin/ffmpeg";
-            if (windows()) {
-                ffprobeResourcesPath += ".exe";
-                ffmpegResourcesPath += ".exe";
-            }
-            ffprobeFile = ResourceUtils.getFile(ffprobeResourcesPath);
-            ffmpegFile = ResourceUtils.getFile(ffmpegResourcesPath);
-            fFprobe = new FFprobe(ffprobeFile.getAbsolutePath());
-            fFmpeg = new FFmpeg(ffmpegFile.getAbsolutePath());
+            fFprobe = new FFprobe();
+            fFmpeg = new FFmpeg();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -507,13 +494,15 @@ public class VodServiceImpl implements VodService {
         String outputFilename;
         String uid = StpUtil.getLoginId("");
 
-        VodDistributeInfo vodDistributeInfo = mongoTemplate.findOne(new Query(Criteria.where("_id").is(cid)), VodDistributeInfo.class);
+        VodDistributeInfo vodDistributeInfo = mongoTemplate.findOne(
+                new Query(Criteria.where("_id").is(cid)), VodDistributeInfo.class);
         boolean needCheckPermission = false;
         if (StringUtils.isNotBlank(uid)) {
-            User accessor = mongoTemplate.findOne(
-                    new Query(Criteria.where("_id").is(new ObjectId(uid))), User.class);
-
-            if (Objects.isNull(accessor) || !accessor.getPermission().contains("review-vod")) {
+            UserInfoBO userInfoBO = (UserInfoBO) StpUtil.getSession().get("user-info");
+            List<String> permissionIdList = userInfoBO.getPermissionIdList();
+            Permission permission = mongoTemplate.findOne(new Query(Criteria.where("value").is("review-vod")),
+                    Permission.class);
+            if (Objects.isNull(permission) || !permissionIdList.contains(permission.getId().toString())) {
                 needCheckPermission = true;
             }
         } else {
@@ -609,19 +598,23 @@ public class VodServiceImpl implements VodService {
 
         UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(new UserEntity());
         // 存入图数据库,准备推荐
-        VodInfoEntity vodInfoEntity = new VodInfoEntity().setCid(vodInfo.getCid())
-                .setBvId(vodInfo.getBvId())
-                .setAuthorId(author.getUid().toString())
-                .setAuthor(userEntity)
-                .setCoverUrl(vodInfo.getCoverUrl())
-                .setTitle(vodInfo.getTitle())
-                .setDesc(vodInfo.getDesc())
-                .setGcType(vodInfo.getGcType())
-                .setPartition(vodInfo.getPartition())
-                .setSubPartition(vodInfo.getSubPartition())
-                .setLabels(vodInfo.getLabels())
-                .setCtime(vodInfo.getCtime());
-        vodInfoRepository.save(vodInfoEntity);
+        VodInfoEntity exists = vodInfoRepository.findByCid(cid);
+        if (Objects.isNull(exists)) {
+            VodInfoEntity vodInfoEntity = new VodInfoEntity().setCid(vodInfo.getCid())
+                    .setBvId(vodInfo.getBvId())
+                    .setAuthorId(author.getUid().toString())
+                    .setAuthor(userEntity)
+                    .setCoverUrl(vodInfo.getCoverUrl())
+                    .setTitle(vodInfo.getTitle())
+                    .setDesc(vodInfo.getDesc())
+                    .setGcType(vodInfo.getGcType())
+                    .setPartition(vodInfo.getPartition())
+                    .setSubPartition(vodInfo.getSubPartition())
+                    .setLabels(vodInfo.getLabels())
+                    .setCtime(vodInfo.getCtime());
+            vodInfoRepository.save(vodInfoEntity);
+        }
+
 
         // 推送站内信
         String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 已通过审核."
