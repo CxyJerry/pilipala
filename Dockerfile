@@ -9,6 +9,6 @@ ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
 
 CMD ["java","-version"]
 
-COPY target/pilipala-$VERSION.jar /pilipala.jar
+COPY target/pilipala-$VERSION.jar /app/pilipala.jar
 
-ENTRYPOINT ["java","-jar","pilipala.jar"]
+ENTRYPOINT ["java","-jar","/app/pilipala.jar"]
