@@ -5,9 +5,9 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "8090:8080"
     volumes:
-      - /home/pilipala/:/
+      - /home/pilipala/:/app
       - /home/pilipala/log:/usr/log/
       - /home/pilipala/upload-dir:/usr/pilipala/target/upload-dir
     networks:

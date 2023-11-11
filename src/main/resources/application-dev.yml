@@ -27,8 +27,6 @@ spring:
 logging:
   level:
     org.springframework.data.mongodb.core: debug
-  file:
-    path: ./log/
 
 sa-token:
   token-name: 'pilipala'
@@ -40,3 +38,4 @@ sa-token:
   is-log: true
 sms:
   access-key: 7moGTMnPKZDcXF9RNGrujK3fY
+  signature: PiliPala

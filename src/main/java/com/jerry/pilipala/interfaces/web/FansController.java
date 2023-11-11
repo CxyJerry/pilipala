@@ -6,6 +6,7 @@ import com.jerry.pilipala.domain.user.service.FansService;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,17 +24,29 @@ public class FansController {
         this.fansService = fansService;
     }
 
+    /**
+     * 关注/取消关注
+     *
+     * @param upUid    upID
+     * @param relation 关注状态
+     * @return userVO
+     */
+    @ApiOperation("关注/取消关注")
     @SaCheckLogin
-    @RateLimiter(key = "limit:fans-put", seconds = 1, count = 1, limitType = LimitType.IP)
     @PutMapping("/put")
     public CommonResponse<?> put(@RequestParam("up_uid") @NotBlank(message = "用户ID不存在") String upUid,
-                                 @RequestParam("relation")@NotNull(message = "关系状态丢失")Integer relation) {
-        UserVO myUserVO = fansService.put(upUid,relation);
+                                 @RequestParam("relation") @NotNull(message = "关系状态丢失") Integer relation) {
+        UserVO myUserVO = fansService.put(upUid, relation);
         return CommonResponse.success(myUserVO);
     }
 
+    /**
+     * 获取关注列表
+     *
+     * @return 关注列表
+     */
+    @ApiOperation("获取关注列表")
     @SaCheckLogin
-    @RateLimiter(key = "limit:fans-idles", seconds = 1, count = 1, limitType = LimitType.IP)
     @GetMapping("/idles")
     public CommonResponse<?> idles() {
         List<UserVO> idles = fansService.idles();

@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
-import com.jerry.pilipala.domain.common.services.SmsService;
 import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.message.service.SmsService;
 import com.jerry.pilipala.domain.user.entity.mongo.Apply;
 import com.jerry.pilipala.domain.user.entity.mongo.Permission;
 import com.jerry.pilipala.domain.user.entity.mongo.Role;
@@ -135,9 +135,10 @@ public class UserServiceImpl implements UserService {
         }
         // redis 不存在，生成一个新的
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
-        redisTemplate.opsForValue().set(loginCodeKey, code, 60, TimeUnit.SECONDS);
+        int expireMinutes = 1;
+        redisTemplate.opsForValue().set(loginCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
 
-        smsService.sendLoginCode(tel, code);
+        smsService.sendCode(tel, code, expireMinutes);
         // todo send message
         return code;
     }

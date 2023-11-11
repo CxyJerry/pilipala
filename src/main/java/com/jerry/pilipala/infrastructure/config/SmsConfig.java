@@ -9,4 +9,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("sms")
 public class SmsConfig {
     private String accessKey;
+    private String signature;
 }
