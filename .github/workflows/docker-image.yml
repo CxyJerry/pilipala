@@ -41,4 +41,4 @@ jobs:
         with:
           context: ./
           push: true
-          tags: pilipala:${{ env.TAG_NAME }}
+          tags: ${{  secrets.DOCKER_USERNAME }}/pilipala:${{ env.TAG_NAME }}
