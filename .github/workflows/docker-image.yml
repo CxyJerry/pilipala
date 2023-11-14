@@ -1,4 +1,4 @@
-name: Pilipala Docker Image CI
+name: Pilipala CI
 
 on:
   create:
