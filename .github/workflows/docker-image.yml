@@ -1,0 +1,28 @@
+name: Pilipala Docker Image CI
+
+on:
+  create:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: debian-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+  
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+      - name: build with maven
+        run: mvn clean install -DskipTests -Pprod
+
+      - name: Extract tag name
+        id: extract_tag
+        run: echo "TAG_NAME=$(echo $GITHUB_REF | cut -d '/' -f 3)" >> $GITHUB_ENV
+        
+      - name: build image 
+        run: docker build . --tag pilipala:${{ env.TAG_NAME }}
