@@ -4,7 +4,6 @@ import com.jerry.pilipala.application.vo.user.ApplyVO;
 import com.jerry.pilipala.application.vo.user.PathVO;
 import com.jerry.pilipala.application.vo.user.PermissionVO;
 import com.jerry.pilipala.application.vo.user.RoleVO;
-import com.jerry.pilipala.domain.user.entity.mongo.Apply;
 import com.jerry.pilipala.infrastructure.utils.Page;
 
 import java.util.List;

@@ -1,23 +1,13 @@
 package com.jerry.pilipala.interfaces.web;
 
-import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.LoginDTO;
-import com.jerry.pilipala.application.dto.RoleSaveDTO;
-import com.jerry.pilipala.application.vo.user.PermissionVO;
-import com.jerry.pilipala.application.vo.user.RoleVO;
 import com.jerry.pilipala.application.vo.user.UserVO;
-import com.jerry.pilipala.domain.user.entity.mongo.Apply;
-import com.jerry.pilipala.domain.user.entity.mongo.Path;
-import com.jerry.pilipala.domain.user.entity.mongo.Permission;
-import com.jerry.pilipala.domain.user.entity.mongo.Role;
-import com.jerry.pilipala.domain.user.service.PermissionService;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +16,6 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import java.util.List;
 
 @Validated
 @RestController
