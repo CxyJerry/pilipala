@@ -1,15 +1,13 @@
 version: '3.3'
 services:
   pilipala:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: cxyjerry/pilipala:v1.0.0
     ports:
       - "8090:8080"
     volumes:
-      - /home/pilipala/:/app
       - /home/pilipala/log:/usr/log/
       - /home/pilipala/upload-dir:/usr/pilipala/target/upload-dir
+      - /home/pilipala/application-prod.yml:/app/application-prod.yml
     networks:
       - my-network
 networks:

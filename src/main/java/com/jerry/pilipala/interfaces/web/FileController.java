@@ -5,7 +5,6 @@ import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
-import com.jerry.pilipala.infrastructure.annotations.FileType;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
