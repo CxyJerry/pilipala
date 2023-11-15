@@ -13,7 +13,8 @@ public interface VodInfoRepository extends Neo4jRepository<VodInfoEntity, Long> 
     @Query("MATCH (vod:`vod-info`) " +
             "WHERE vod.partition = $partition " +
             "RETURN vod " +
-            "ORDER BY vod.viewCount + vod.likeCount + vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount DESC " +
+            "ORDER BY (vod.viewCount * 0.2 + vod.likeCount * 0.4 + " +
+            "((vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount) / 5) * 0.4) DESC " +
             "SKIP $skip LIMIT $limit")
     List<VodInfoEntity> recommendVideosByContentBasedFiltering(String partition, int skip, int limit);
 
@@ -25,16 +26,19 @@ public interface VodInfoRepository extends Neo4jRepository<VodInfoEntity, Long> 
 
     @Query("MATCH (u:`user` {uid: $userId})-[:Followed]->(followed:`user`)-[:CreatedBy]->(vod:`vod-info`) " +
             "RETURN vod " +
-            "ORDER BY vod.viewCount + vod.likeCount + vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount DESC " +
+            "ORDER BY (vod.viewCount * 0.2 + vod.likeCount * 0.4 + " +
+            "((vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount) / 5) * 0.4) DESC,rand() " +
             "LIMIT $limit")
     List<VodInfoEntity> recommendVideosByUserId(String userId, int limit);
 
 
     @Query("MATCH (vod:`vod-info`) " +
             "RETURN vod " +
-            "ORDER BY vod.viewCount + vod.likeCount + vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount DESC " +
+            "ORDER BY (vod.viewCount * 0.2 + vod.likeCount * 0.4 + " +
+            "((vod.barrageCount + vod.commentCount + vod.coinCount + vod.collectCount + vod.shareCount) / 5) * 0.4) DESC, rand() " +
             "LIMIT $limit")
     List<VodInfoEntity> recommendVideosByContentBasedFiltering(int limit);
+
 
     @Query("MATCH (vod:`vod-info`)-[:CreatedBy]->(user:`user`) " +
             "WHERE vod.partition = $partition " +
