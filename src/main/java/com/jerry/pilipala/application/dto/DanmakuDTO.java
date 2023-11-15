@@ -12,7 +12,7 @@ public class DanmakuDTO {
     // 用户ID
     @NotBlank(message = "弹幕作者不得为空")
     private String author;
-    @NotBlank(message = "弹幕颜色不得为空")
+    @NotNull(message = "弹幕颜色不得为空")
     private Integer color;
     // 稿件ID
     @NotNull(message = "稿件ID不得为空")
