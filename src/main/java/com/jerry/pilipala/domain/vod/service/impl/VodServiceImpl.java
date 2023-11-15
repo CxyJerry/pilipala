@@ -1029,7 +1029,7 @@ public class VodServiceImpl implements VodService {
         List<VodVO> vodVOList = buildVodVOList(vodInfoList);
 
         Query totalQuery = new Query(criteria);
-        long count = mongoTemplate.count(totalQuery, BVod.class);
+        long count = mongoTemplate.count(totalQuery, VodInfo.class);
 
         return page.setTotal(count).setPage(vodVOList);
     }
