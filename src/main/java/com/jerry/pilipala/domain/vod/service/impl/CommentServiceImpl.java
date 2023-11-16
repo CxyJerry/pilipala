@@ -7,7 +7,7 @@ import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Comment;
 import com.jerry.pilipala.domain.vod.repository.CommentRepository;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
@@ -79,7 +79,7 @@ public class CommentServiceImpl implements CommentService {
         // 更新评论数
         mongoTemplate.upsert(new Query(Criteria.where("_id").is(Long.parseLong(commentDTO.getCid()))
                         .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("commentCount", 1), VodStatics.class);
+                new Update().inc("commentCount", 1), VodStatistics.class);
 
 
         // 构建评论模型

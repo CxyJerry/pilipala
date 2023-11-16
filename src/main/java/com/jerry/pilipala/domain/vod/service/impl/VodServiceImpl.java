@@ -24,7 +24,7 @@ import com.jerry.pilipala.domain.vod.entity.mongo.distribute.VodDistributeInfo;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionRecord;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodPlayOffsetRecord;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.Thumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.BVod;
@@ -663,19 +663,19 @@ public class VodServiceImpl implements VodService {
 
 
         // statics 数据查询
-        List<VodStatics> bVodStaticsList = mongoTemplate.find(
+        List<VodStatistics> bVodStatisticsList = mongoTemplate.find(
                 new Query(Criteria.where("cid").in(cidSet)),
-                VodStatics.class);
+                VodStatistics.class);
 
-        Map<Long, VodStatics> vodStaticsMap;
-        vodStaticsMap = bVodStaticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatics.class))
-                .collect(Collectors.toMap(VodStatics::getCid, vodStatics -> vodStatics));
+        Map<Long, VodStatistics> vodStaticsMap;
+        vodStaticsMap = bVodStatisticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatistics.class))
+                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
 
         return vodInfos.stream().map(vodInfo -> {
             // 查询统计信息
-            VodStatics vodStatics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatics.EMPTY_STATICS);
-            if (Objects.isNull(vodStatics)) {
-                vodStatics = VodStatics.EMPTY_STATICS;
+            VodStatistics vodStatistics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatistics.EMPTY_STATICS);
+            if (Objects.isNull(vodStatistics)) {
+                vodStatistics = VodStatistics.EMPTY_STATICS;
             }
 
             // 创建视图模型
@@ -691,13 +691,13 @@ public class VodServiceImpl implements VodService {
                     .setDesc(vodInfo.getDesc())
                     .setMtime(vodInfo.getMtime())
                     // 设置统计数据
-                    .setViewCount(vodStatics.getViewCount())
-                    .setLikeCount(vodStatics.getLikeCount())
-                    .setBarrageCount(vodStatics.getBarrageCount())
-                    .setCommentCount(vodStatics.getCommentCount())
-                    .setCoinCount(vodStatics.getCoinCount())
-                    .setCollectCount(vodStatics.getCollectCount())
-                    .setShareCount(vodStatics.getShareCount());
+                    .setViewCount(vodStatistics.getViewCount())
+                    .setLikeCount(vodStatistics.getLikeCount())
+                    .setBarrageCount(vodStatistics.getBarrageCount())
+                    .setCommentCount(vodStatistics.getCommentCount())
+                    .setCoinCount(vodStatistics.getCoinCount())
+                    .setCollectCount(vodStatistics.getCollectCount())
+                    .setShareCount(vodStatistics.getShareCount());
         }).toList();
     }
 
@@ -733,13 +733,13 @@ public class VodServiceImpl implements VodService {
                 .map(v -> mapper.convertValue(v, VodInfoEntity.class))
                 .collect(Collectors.toMap(VodInfoEntity::getCid, v -> v));
 
-        List<VodStatics> vodStaticsList = mongoTemplate.find(
+        List<VodStatistics> vodStatisticsList = mongoTemplate.find(
                 new Query(Criteria.where("cid").in(cidList)
                         .and("data").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                VodStatics.class);
+                VodStatistics.class);
 
-        Map<Long, VodStatics> staticsMap = vodStaticsList.stream()
-                .collect(Collectors.toMap(VodStatics::getCid, vodStatics -> vodStatics));
+        Map<Long, VodStatistics> staticsMap = vodStatisticsList.stream()
+                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
 
 
         // 查询用户观看数据
@@ -801,7 +801,7 @@ public class VodServiceImpl implements VodService {
             );
 
             // 获取统计数据
-            VodStatics statics = staticsMap.getOrDefault(vod.getCid(), new VodStatics());
+            VodStatistics statics = staticsMap.getOrDefault(vod.getCid(), new VodStatistics());
             VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vod.getCid(), null);
             if (Objects.isNull(vodInfoEntity)) {
                 vodInfoEntity = vodInfoRepository.findById(vod.getCid()).orElse(null);
@@ -930,9 +930,9 @@ public class VodServiceImpl implements VodService {
 
     @Override
     public void updatePlayCount(Long cid) {
-        mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
+        mongoTemplate.upsert(new Query(Criteria.where("cid").is(cid)
                         .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("viewCount", 1), VodStatics.class);
+                new Update().inc("viewCount", 1), VodStatistics.class);
     }
 
 
@@ -946,9 +946,9 @@ public class VodServiceImpl implements VodService {
         Set<Object> cidSet = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
 
         // statics 数据查询
-        List<VodStatics> bVodStaticsList = mongoTemplate.find(new Query(Criteria.where("cid").in(cidSet)), VodStatics.class);
-        Map<Long, VodStatics> vodStaticsMap = bVodStaticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatics.class))
-                .collect(Collectors.toMap(VodStatics::getCid, vodStatics -> vodStatics));
+        List<VodStatistics> bVodStatisticsList = mongoTemplate.find(new Query(Criteria.where("cid").in(cidSet)), VodStatistics.class);
+        Map<Long, VodStatistics> vodStaticsMap = bVodStatisticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatistics.class))
+                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
 
 
         // 查询 up 主信息
@@ -965,7 +965,7 @@ public class VodServiceImpl implements VodService {
 
             // 设置预览数据
             VodInfo vodInfo = vodInfoMap.get(bvod.getBvId());
-            VodStatics statics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatics.EMPTY_STATICS);
+            VodStatistics statics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatistics.EMPTY_STATICS);
             previewBVodVO.setBvId(bvod.getBvId())
                     .setCoverUrl(vodInfo.getCoverUrl())
                     .setTitle(vodInfo.getTitle())
@@ -1045,12 +1045,12 @@ public class VodServiceImpl implements VodService {
                     redisTemplate.opsForSet().remove(likeKey, cid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("likeCount", -1), VodStatics.class);
+                            new Update().inc("likeCount", -1), VodStatistics.class);
                 } else {
                     redisTemplate.opsForSet().add(likeKey, cid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("likeCount", 1), VodStatics.class);
+                            new Update().inc("likeCount", 1), VodStatistics.class);
                 }
             }
             case COIN -> {
@@ -1059,12 +1059,12 @@ public class VodServiceImpl implements VodService {
                     redisTemplate.opsForSet().remove(coinKey, uid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("coinCount", -1), VodStatics.class);
+                            new Update().inc("coinCount", -1), VodStatistics.class);
                 } else {
                     redisTemplate.opsForSet().add(coinKey, uid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("coinCount", 1), VodStatics.class);
+                            new Update().inc("coinCount", 1), VodStatistics.class);
                 }
             }
             case COLLECT -> {
@@ -1073,17 +1073,17 @@ public class VodServiceImpl implements VodService {
                     redisTemplate.opsForSet().remove(collectKey, cid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("collectCount", -1), VodStatics.class);
+                            new Update().inc("collectCount", -1), VodStatistics.class);
                 } else {
                     redisTemplate.opsForSet().add(collectKey, cid);
                     mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                                     .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("collectCount", 1), VodStatics.class);
+                            new Update().inc("collectCount", 1), VodStatistics.class);
                 }
             }
             case SHARE -> mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
                             .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                    new Update().inc("shareCount", 1), VodStatics.class);
+                    new Update().inc("shareCount", 1), VodStatistics.class);
         }
     }
 

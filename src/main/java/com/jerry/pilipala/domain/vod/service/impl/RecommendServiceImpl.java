@@ -9,7 +9,7 @@ import com.jerry.pilipala.application.vo.vod.PreviewVodVO;
 import com.jerry.pilipala.application.vo.vod.RecommendVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
 import com.jerry.pilipala.domain.vod.service.RecommendService;
@@ -104,10 +104,10 @@ public class RecommendServiceImpl implements RecommendService {
 
         List<Long> cidList = vodInfoEntities.stream().map(VodInfoEntity::getCid).toList();
 
-        List<VodStatics> vodStatics = mongoTemplate.find(new Query(Criteria.where("cid").in(cidList)
+        List<VodStatistics> vodStatics = mongoTemplate.find(new Query(Criteria.where("cid").in(cidList)
                         .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                VodStatics.class);
-        Map<Long, VodStatics> vodStaticsMap = vodStatics.stream().collect(Collectors.toMap(VodStatics::getCid, v -> v));
+                VodStatistics.class);
+        Map<Long, VodStatistics> vodStaticsMap = vodStatics.stream().collect(Collectors.toMap(VodStatistics::getCid, v -> v));
 
         return vodInfoEntities.stream().map(vodInfoEntity -> {
                     // 创建作者预览模型
@@ -122,7 +122,7 @@ public class RecommendServiceImpl implements RecommendService {
                     PreviewVodVO preview = new PreviewVodVO().setCid(vodInfoEntity.getCid())
                             .setUrl(url)
                             .setName(vodInfoEntity.getTitle());
-                    VodStatics statics = vodStaticsMap.getOrDefault(vodInfoEntity.getCid(), new VodStatics());
+                    VodStatistics statics = vodStaticsMap.getOrDefault(vodInfoEntity.getCid(), new VodStatistics());
                     // 组装
                     return new PreviewBVodVO()
                             .setBvId(vodInfoEntity.getBvId())
