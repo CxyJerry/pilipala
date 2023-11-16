@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 
 @Data
 @Accessors(chain = true)
-@Document("vod_statics")
-public class VodStatics {
+@Document("vod_statistics")
+public class VodStatistics {
     @Id
     private ObjectId id;
     private Long cid = 0L;
@@ -33,7 +33,7 @@ public class VodStatics {
     private Integer shareCount = 0;
 
 
-    public static VodStatics EMPTY_STATICS = new VodStatics();
+    public static VodStatistics EMPTY_STATICS = new VodStatistics();
 
     public void incrementViewCount() {
         this.viewCount += 1;

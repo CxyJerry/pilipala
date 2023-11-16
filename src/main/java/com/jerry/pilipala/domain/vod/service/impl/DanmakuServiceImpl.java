@@ -6,7 +6,7 @@ import com.jerry.pilipala.application.dto.DanmakuDTO;
 import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Danmaku;
 import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.domain.vod.service.DanmakuSseManager;
@@ -65,7 +65,7 @@ public class DanmakuServiceImpl implements DanmakuService {
         // 更新弹幕数
         mongoTemplate.upsert(new Query(Criteria.where("_id").is(danmakuDto.getId())
                         .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("barrageCount", 1), VodStatics.class);
+                new Update().inc("barrageCount", 1), VodStatistics.class);
 
         DanmakuValueVO danmakuValueVO = new DanmakuValueVO();
         danmakuValueVO.setUid(uid)
