@@ -1,7 +1,7 @@
 package com.jerry.pilipala.domain.vod.service.scheduler;
 
 import cn.hutool.core.date.DateUtil;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatics;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
@@ -33,23 +33,23 @@ public class StatisticsRefreshScheduler {
 
     @Scheduled(cron = "0 0 0 * * ?")
     public void refreshStatistics() {
-        List<VodStatics> vodStaticsList = mongoTemplate.find(new Query(Criteria.where("date")
+        List<VodStatistics> vodStatisticsList = mongoTemplate.find(new Query(Criteria.where("date")
                         .is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                VodStatics.class);
-        List<Long> cidList = vodStaticsList.stream().map(VodStatics::getCid).toList();
-        Map<Long, VodStatics> vodStaticsMap = vodStaticsList.stream()
-                .collect(Collectors.toMap(VodStatics::getCid, v -> v));
+                VodStatistics.class);
+        List<Long> cidList = vodStatisticsList.stream().map(VodStatistics::getCid).toList();
+        Map<Long, VodStatistics> vodStaticsMap = vodStatisticsList.stream()
+                .collect(Collectors.toMap(VodStatistics::getCid, v -> v));
 
         List<VodInfoEntity> vodInfoEntities = vodInfoRepository.findAllById(cidList);
         vodInfoEntities.forEach(vodStaticsEntity -> {
-            VodStatics vodStatics = vodStaticsMap.get(vodStaticsEntity.getCid());
-            vodStaticsEntity.setViewCount(vodStaticsEntity.getViewCount() + vodStatics.getViewCount())
-                    .setLikeCount(vodStaticsEntity.getLikeCount() + vodStatics.getLikeCount())
-                    .setBarrageCount(vodStaticsEntity.getBarrageCount() + vodStatics.getBarrageCount())
-                    .setCommentCount(vodStaticsEntity.getCommentCount() + vodStatics.getCommentCount())
-                    .setCoinCount(vodStaticsEntity.getCoinCount() + vodStatics.getCoinCount())
-                    .setCollectCount(vodStaticsEntity.getCollectCount() + vodStatics.getCollectCount())
-                    .setShareCount(vodStaticsEntity.getShareCount() + vodStatics.getShareCount());
+            VodStatistics vodStatistics = vodStaticsMap.get(vodStaticsEntity.getCid());
+            vodStaticsEntity.setViewCount(vodStaticsEntity.getViewCount() + vodStatistics.getViewCount())
+                    .setLikeCount(vodStaticsEntity.getLikeCount() + vodStatistics.getLikeCount())
+                    .setBarrageCount(vodStaticsEntity.getBarrageCount() + vodStatistics.getBarrageCount())
+                    .setCommentCount(vodStaticsEntity.getCommentCount() + vodStatistics.getCommentCount())
+                    .setCoinCount(vodStaticsEntity.getCoinCount() + vodStatistics.getCoinCount())
+                    .setCollectCount(vodStaticsEntity.getCollectCount() + vodStatistics.getCollectCount())
+                    .setShareCount(vodStaticsEntity.getShareCount() + vodStatistics.getShareCount());
             vodInfoRepository.save(vodStaticsEntity);
         });
         redisTemplate.opsForHash().delete(VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY,
