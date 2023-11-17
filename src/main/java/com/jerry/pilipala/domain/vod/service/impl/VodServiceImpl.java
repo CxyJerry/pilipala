@@ -591,7 +591,14 @@ public class VodServiceImpl implements VodService {
             return;
         }
 
-        UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(new UserEntity());
+        UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(null);
+        if (Objects.isNull(userEntity)) {
+            userEntity = new UserEntity();
+            userEntity.setUid(author.getUid().toString())
+                    .setTel(author.getTel())
+                    .setCtime(author.getCtime())
+                    .setFollowUps(new ArrayList<>());
+        }
         // 存入图数据库,准备推荐
         VodInfoEntity exists = vodInfoRepository.findByCid(cid);
         if (Objects.isNull(exists)) {
