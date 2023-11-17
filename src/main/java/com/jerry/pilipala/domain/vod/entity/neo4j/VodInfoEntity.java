@@ -20,6 +20,7 @@ public class VodInfoEntity {
     private String coverUrl;
     private String title;
     private String desc;
+    private Double duration;
     private String gcType;
     private String partition;
     private String subPartition;

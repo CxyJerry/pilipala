@@ -233,6 +233,10 @@ public class VodServiceImpl implements VodService {
         bVod.setReady(true);
         mongoTemplate.save(bVod);
 
+        Vod vod = mongoTemplate.findById(videoPostDTO.getCid(), Vod.class);
+        if (Objects.isNull(vod)) {
+            throw BusinessException.businessError("稿件不存在");
+        }
 
         VodInfo vodInfo = new VodInfo();
         vodInfo.setBvId(videoPostDTO.getBvId())
@@ -246,6 +250,7 @@ public class VodServiceImpl implements VodService {
                 .setSubPartition(videoPostDTO.getSubPartition())
                 .setLabels(videoPostDTO.getLabels())
                 .setDesc(videoPostDTO.getDesc())
+                .setDuration(vod.getContainer().getDuration())
                 .setMtime(System.currentTimeMillis());
         mongoTemplate.save(vodInfo);
 
@@ -576,6 +581,15 @@ public class VodServiceImpl implements VodService {
             throw new BusinessException("创作者信息异常", StandardResponse.ERROR);
         }
 
+        if (Objects.isNull(vodInfo.getDuration())) {
+            Vod vod = mongoTemplate.findById(vodInfo.getCid(), Vod.class);
+            if (Objects.nonNull(vod)) {
+                Double duration = vod.getContainer().getDuration();
+                vodInfo.setDuration(duration);
+                mongoTemplate.save(vodInfo);
+            }
+        }
+
         // 审批未通过，不需要推荐
         if (!statusEnum.equals(VodStatusEnum.PASSED)) {
             vodInfoRepository.deleteById(vodInfo.getCid());
@@ -590,6 +604,7 @@ public class VodServiceImpl implements VodService {
             }
             return;
         }
+
 
         UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(null);
         if (Objects.isNull(userEntity)) {
@@ -609,6 +624,7 @@ public class VodServiceImpl implements VodService {
                     .setCoverUrl(vodInfo.getCoverUrl())
                     .setTitle(vodInfo.getTitle())
                     .setDesc(vodInfo.getDesc())
+                    .setDuration(vodInfo.getDuration())
                     .setGcType(vodInfo.getGcType())
                     .setPartition(vodInfo.getPartition())
                     .setSubPartition(vodInfo.getSubPartition())
@@ -1001,6 +1017,8 @@ public class VodServiceImpl implements VodService {
                     .setAvatar(user.getAvatar())
                     .setIntro(user.getIntro());
             previewBVodVO.setAuthor(previewUserVO);
+
+            previewBVodVO.setDuration(vodInfo.getDuration());
             return previewBVodVO;
         }).toList();
     }
