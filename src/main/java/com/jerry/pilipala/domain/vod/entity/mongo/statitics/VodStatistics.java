@@ -5,12 +5,17 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 @Data
 @Accessors(chain = true)
+@CompoundIndexes({
+        @CompoundIndex(name = "uni_cid_date_idx", def = "{'cid': 1, 'date': 1}")
+})
 @Document("vod_statistics")
 public class VodStatistics {
     @Id

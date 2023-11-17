@@ -9,4 +9,4 @@ spring:
     active: @activatedProperties@
 
 limit:
-  ip-max-count: 30
+  ip-max-count: 100

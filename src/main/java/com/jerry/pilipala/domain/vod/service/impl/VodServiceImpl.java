@@ -647,7 +647,7 @@ public class VodServiceImpl implements VodService {
         }
 
         // 构建出 vod info 视图列表
-        List<VodVO> vodVOList = buildVodVOList(vodInfoList);
+        List<VodVO> vodVOList = buildVodVOList(vodInfoList, true);
 
         Query totalQuery = new Query(criteria);
         long count = mongoTemplate.count(totalQuery, BVod.class);
@@ -655,28 +655,27 @@ public class VodServiceImpl implements VodService {
         return page.setTotal(count).setPage(vodVOList);
     }
 
-    public List<VodVO> buildVodVOList(List<VodInfo> vodInfos) {
+    public List<VodVO> buildVodVOList(List<VodInfo> vodInfos, boolean needStatistics) {
         // 整理出所有的 cid
-        Collection<Object> cidSet = vodInfos.stream()
+        Collection<Long> cidSet = vodInfos.stream()
                 .map(VodInfo::getCid)
                 .collect(Collectors.toSet());
 
 
         // statics 数据查询
-        List<VodStatistics> bVodStatisticsList = mongoTemplate.find(
-                new Query(Criteria.where("cid").in(cidSet)),
-                VodStatistics.class);
+        Map<Long, VodInfoEntity> vodInfoEntityMap;
+        if (needStatistics) {
+            List<VodInfoEntity> vodInfoEntities = vodInfoRepository.findAllById(cidSet);
+            vodInfoEntityMap = vodInfoEntities.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(VodInfoEntity::getCid, vodInfo -> vodInfo));
+        } else {
+            vodInfoEntityMap = new HashMap<>();
+        }
 
-        Map<Long, VodStatistics> vodStaticsMap;
-        vodStaticsMap = bVodStatisticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatistics.class))
-                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
 
         return vodInfos.stream().map(vodInfo -> {
             // 查询统计信息
-            VodStatistics vodStatistics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatistics.EMPTY_STATICS);
-            if (Objects.isNull(vodStatistics)) {
-                vodStatistics = VodStatistics.EMPTY_STATICS;
-            }
+            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vodInfo.getCid(), new VodInfoEntity());
 
             // 创建视图模型
             return new VodVO()
@@ -691,13 +690,13 @@ public class VodServiceImpl implements VodService {
                     .setDesc(vodInfo.getDesc())
                     .setMtime(vodInfo.getMtime())
                     // 设置统计数据
-                    .setViewCount(vodStatistics.getViewCount())
-                    .setLikeCount(vodStatistics.getLikeCount())
-                    .setBarrageCount(vodStatistics.getBarrageCount())
-                    .setCommentCount(vodStatistics.getCommentCount())
-                    .setCoinCount(vodStatistics.getCoinCount())
-                    .setCollectCount(vodStatistics.getCollectCount())
-                    .setShareCount(vodStatistics.getShareCount());
+                    .setViewCount(vodInfoEntity.getViewCount())
+                    .setLikeCount(vodInfoEntity.getLikeCount())
+                    .setBarrageCount(vodInfoEntity.getBarrageCount())
+                    .setCommentCount(vodInfoEntity.getCommentCount())
+                    .setCoinCount(vodInfoEntity.getCoinCount())
+                    .setCollectCount(vodInfoEntity.getCollectCount())
+                    .setShareCount(vodInfoEntity.getShareCount());
         }).toList();
     }
 
@@ -943,13 +942,13 @@ public class VodServiceImpl implements VodService {
 
         List<BVod> bvodList = mongoTemplate.find(new Query(Criteria.where("_id").in(bvIdList)), BVod.class);
         // 整理出所有的 cid
-        Set<Object> cidSet = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
+        Set<Long> cidSet = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
 
         // statics 数据查询
-        List<VodStatistics> bVodStatisticsList = mongoTemplate.find(new Query(Criteria.where("cid").in(cidSet)), VodStatistics.class);
-        Map<Long, VodStatistics> vodStaticsMap = bVodStatisticsList.stream().filter(Objects::nonNull).map(o -> mapper.convertValue(o, VodStatistics.class))
-                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
-
+        List<VodInfoEntity> vodInfoEntities = vodInfoRepository.findAllById(cidSet);
+        Map<Long, VodInfoEntity> vodInfoEntityMap = vodInfoEntities.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(VodInfoEntity::getCid, vodInfo -> vodInfo));
 
         // 查询 up 主信息
         List<String> uidList = bvodList.stream().map(BVod::getUid).toList();
@@ -965,20 +964,20 @@ public class VodServiceImpl implements VodService {
 
             // 设置预览数据
             VodInfo vodInfo = vodInfoMap.get(bvod.getBvId());
-            VodStatistics statics = vodStaticsMap.getOrDefault(vodInfo.getCid(), VodStatistics.EMPTY_STATICS);
+            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vodInfo.getCid(), new VodInfoEntity());
             previewBVodVO.setBvId(bvod.getBvId())
                     .setCoverUrl(vodInfo.getCoverUrl())
                     .setTitle(vodInfo.getTitle())
                     .setDesc(vodInfo.getDesc())
                     .setPartition(vodInfo.getPartition());
             // 设置统计数据
-            previewBVodVO.setViewCount(statics.getViewCount())
-                    .setLikeCount(statics.getLikeCount())
-                    .setBarrageCount(statics.getBarrageCount())
-                    .setCommentCount(statics.getCommentCount())
-                    .setCoinCount(statics.getCoinCount())
-                    .setCollectCount(statics.getCollectCount())
-                    .setShareCount(statics.getShareCount());
+            previewBVodVO.setViewCount(vodInfoEntity.getViewCount())
+                    .setLikeCount(vodInfoEntity.getLikeCount())
+                    .setBarrageCount(vodInfoEntity.getBarrageCount())
+                    .setCommentCount(vodInfoEntity.getCommentCount())
+                    .setCoinCount(vodInfoEntity.getCoinCount())
+                    .setCollectCount(vodInfoEntity.getCollectCount())
+                    .setShareCount(vodInfoEntity.getShareCount());
 
             // 设置预览视频
             String url = "/file/video/%s/%s/1".formatted(vodInfo.getCid(), Qn._PREVIEW.getDescription());
@@ -1026,7 +1025,7 @@ public class VodServiceImpl implements VodService {
         }
 
         // 构建出 vod info 视图列表
-        List<VodVO> vodVOList = buildVodVOList(vodInfoList);
+        List<VodVO> vodVOList = buildVodVOList(vodInfoList, false);
 
         Query totalQuery = new Query(criteria);
         long count = mongoTemplate.count(totalQuery, VodInfo.class);
