@@ -22,4 +22,5 @@ public class PreviewBVodVO {
     private Integer shareCount;
     private PreviewUserVO author;
     private PreviewVodVO preview;
+    private Double duration;
 }

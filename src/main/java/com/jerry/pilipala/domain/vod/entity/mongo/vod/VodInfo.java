@@ -26,6 +26,7 @@ public class VodInfo {
     private String subPartition;
     private List<String> labels;
     private String desc;
+    private Double duration;
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 }
