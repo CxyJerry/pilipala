@@ -138,7 +138,8 @@ public class RecommendServiceImpl implements RecommendService {
                             .setCollectCount(vodInfoEntity.getCollectCount() + statics.getCollectCount())
                             .setShareCount(vodInfoEntity.getShareCount() + statics.getShareCount())
                             .setAuthor(author)
-                            .setPreview(preview);
+                            .setPreview(preview)
+                            .setDuration(vodInfoEntity.getDuration());
 
                 }
         ).toList();
