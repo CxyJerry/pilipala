@@ -1,6 +1,7 @@
 package com.jerry.pilipala.infrastructure.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
@@ -34,11 +35,11 @@ public class RequestUtil {
         String ip = null;
         for (String config : HEADER_CONFIG) {
             ip = request.getHeader(config);
-            if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            if (StringUtils.isNotBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
                 break;
             }
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (StringUtils.isBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         if ("0:0:0:0:0:0:0:1".equals(ip)) {
