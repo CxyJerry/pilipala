@@ -1,6 +1,7 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.domain.user.service.UserService;
@@ -37,7 +38,6 @@ public class UserController {
      */
     @ApiOperation("获取登录验证码")
     @GetMapping("/code")
-    @RateLimiter(key = "user-limit:code", seconds = 60, count = 1, message = "验证码已发送", limitType = LimitType.IP)
     public CommonResponse<?> code(@RequestParam("tel") @NotBlank(message = "手机号不得为空") String tel) {
         userService.code(tel);
         return CommonResponse.success();
@@ -54,6 +54,33 @@ public class UserController {
     @RateLimiter(key = "user-limit:login", seconds = 3, count = 1, limitType = LimitType.IP)
     public CommonResponse<?> login(@Valid @RequestBody LoginDTO loginDTO) {
         UserVO userVO = userService.login(loginDTO);
+        return CommonResponse.success(userVO);
+    }
+
+    /**
+     * 获取邮箱登录验证码
+     *
+     * @param email 手机号
+     * @return success
+     */
+    @ApiOperation("获取邮箱登录验证码")
+    @GetMapping("/email-code")
+    public CommonResponse<?> emailCode(@RequestParam("email") @NotBlank(message = "邮箱不得为空") String email) {
+        userService.emailCode(email);
+        return CommonResponse.success();
+    }
+
+    /**
+     * 登录
+     *
+     * @param loginDTO dto
+     * @return userVO
+     */
+    @ApiOperation("邮箱验证码登录")
+    @PostMapping("/email-login")
+    @RateLimiter(key = "user-limit:login", seconds = 3, count = 1, limitType = LimitType.IP)
+    public CommonResponse<?> emailLogin(@Valid @RequestBody EmailLoginDTO loginDTO) {
+        UserVO userVO = userService.emailLogin(loginDTO);
         return CommonResponse.success(userVO);
     }
 

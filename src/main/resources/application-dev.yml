@@ -24,6 +24,17 @@ spring:
     connection-timeout: 60s
     pool:
       max-connection-lifetime: 24h
+  mail:
+    host: smtp.qq.com
+    username: xxx@qq.com
+    password: xxxxx
+    properties:
+      mail:
+        smtp:
+          auth: true
+        starttls:
+          enable: true
+          required: true
 logging:
   level:
     org.springframework.data.mongodb.core: debug
