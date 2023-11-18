@@ -16,6 +16,7 @@ public class UserEntity {
     @Id
     private String uid = "";
     private String tel = "";
+    private String email = "";
     private Long ctime = System.currentTimeMillis();
     @Relationship("Followed")
     private List<UserEntity> followUps = new ArrayList<>();

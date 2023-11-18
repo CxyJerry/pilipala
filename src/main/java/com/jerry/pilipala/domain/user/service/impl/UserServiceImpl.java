@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.bo.UserInfoBO;
+import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.domain.message.service.MessageService;
@@ -72,21 +73,31 @@ public class UserServiceImpl implements UserService {
         String encodeTel = Base64.getEncoder().encodeToString(loginDTO.getTel().getBytes());
         User user = mongoTemplate.findOne(
                 new Query(Criteria.where("tel").is(encodeTel)), User.class);
+        return loginLogic(user, encodeTel, "");
+    }
 
+    private User register(String tel, String email) {
+        String uid = UUID.randomUUID().toString().replace("-", "");
+        String end = uid.substring(0, 8);
+
+        User user = new User().setNickname("user_".concat(end))
+                .setTel(tel)
+                .setEmail(email)
+                .setIntro("");
+
+        user = mongoTemplate.save(user);
+
+        UserEntity userEntity = new UserEntity()
+                .setUid(user.getUid().toString())
+                .setTel(user.getTel())
+                .setEmail(user.getEmail());
+        userEntityRepository.save(userEntity);
+        return user;
+    }
+
+    private UserVO loginLogic(User user, String tel, String email) {
         if (Objects.isNull(user)) {
-            String uid = UUID.randomUUID().toString().replace("-", "");
-            String end = uid.substring(0, 8);
-
-            user = new User().setNickname("user_".concat(end))
-                    .setTel(encodeTel)
-                    .setIntro("");
-
-            user = mongoTemplate.save(user);
-
-            UserEntity userEntity = new UserEntity()
-                    .setUid(user.getUid().toString())
-                    .setTel(user.getTel());
-            userEntityRepository.save(userEntity);
+            user = register(tel, email);
         }
 
         // 登录成功
@@ -94,13 +105,13 @@ public class UserServiceImpl implements UserService {
 
         // 推送站内信
         User finalUser = user;
-//        CompletableFuture.runAsync(() -> {
+
         String msg = "欢迎您，亲爱的%s, 您的账号于 %s ，在 IP: %s 进行登录。"
                 .formatted(finalUser.getNickname(),
                         DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd HH:mm:ss"),
                         RequestUtil.getIpAddress(request));
         messageService.send("", finalUser.getUid().toString(), msg);
-//        });
+
 
         String roleId = user.getRoleId();
         Role role;
@@ -123,11 +134,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String code(String tel) {
+    public void code(String tel) {
         String loginCodeKey = "login-%s".formatted(tel);
         String code = (String) redisTemplate.opsForValue().get(loginCodeKey);
         if (StringUtils.isNotBlank(code)) {
-            return code;
+            throw BusinessException.businessError("验证码已发送");
         }
         // redis 不存在，生成一个新的
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
@@ -136,7 +147,36 @@ public class UserServiceImpl implements UserService {
 
         smsService.sendCode(tel, code, expireMinutes);
         // todo send message
-        return code;
+    }
+
+    @Override
+    public void emailCode(String email) {
+        String emailCodeKey = "login-email-%s".formatted(email);
+        String code = (String) redisTemplate.opsForValue().get(emailCodeKey);
+        if (StringUtils.isNotBlank(code)) {
+            throw BusinessException.businessError("验证码已发送");
+        }
+        // redis 不存在，生成一个新的
+        code = CaptchaUtil.generatorCaptchaNumberByLength(6);
+        int expireMinutes = 1;
+        redisTemplate.opsForValue().set(emailCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
+
+        smsService.sendEmailCode(email, code, expireMinutes);
+    }
+
+    @Override
+    public UserVO emailLogin(EmailLoginDTO loginDTO) {
+        String loginCodeKey = "login-email-%s".formatted(loginDTO.getEmail());
+        String code = (String) redisTemplate.opsForValue().get(loginCodeKey);
+        if (StringUtils.isBlank(code) || !code.equals(loginDTO.getVerifyCode())) {
+            throw new BusinessException("验证码错误", StandardResponse.ERROR);
+        }
+        redisTemplate.delete(loginCodeKey);
+        // 密文存储手机号
+        String encodeEmail = Base64.getEncoder().encodeToString(loginDTO.getEmail().getBytes());
+        User user = mongoTemplate.findOne(
+                new Query(Criteria.where("email").is(encodeEmail)), User.class);
+        return loginLogic(user, "", encodeEmail);
     }
 
     @Override
