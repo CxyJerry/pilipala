@@ -14,6 +14,7 @@ public class User {
     @Id
     private ObjectId uid;
     private String tel;
+    private String email;
     @TextIndexed
     private String nickname = "unknown";
     private String intro = "";
@@ -24,7 +25,8 @@ public class User {
 
     public static User UNKNOWN = new User()
             .setUid(new ObjectId())
-            .setTel("123456")
+            .setTel("")
+            .setEmail("")
             .setNickname("unknown")
             .setAvatar("")
             .setRoleId("");
