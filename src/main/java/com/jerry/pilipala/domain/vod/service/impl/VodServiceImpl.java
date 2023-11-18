@@ -611,6 +611,7 @@ public class VodServiceImpl implements VodService {
             userEntity = new UserEntity();
             userEntity.setUid(author.getUid().toString())
                     .setTel(author.getTel())
+                    .setEmail(author.getEmail())
                     .setCtime(author.getCtime())
                     .setFollowUps(new ArrayList<>());
         }
