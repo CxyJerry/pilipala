@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FansServiceImpl implements FansService {
@@ -37,18 +39,25 @@ public class FansServiceImpl implements FansService {
         if (Objects.isNull(mySelf)) {
             return null;
         }
-        UserEntity upEntity = userEntityRepository.findById(upUid).orElse(null);
+        Set<String> followSet = mySelf.getFollowUps()
+                .stream()
+                .map(UserEntity::getUid)
+                .collect(Collectors.toSet());
         UserRelationEnum relationEnum = UserRelationEnum.parse(relation);
+        UserEntity upEntity = userEntityRepository.findById(upUid).orElse(null);
         switch (relationEnum) {
             case FOLLOW -> {
-                if (!mySelf.getFollowUps().contains(upEntity)) {
+                if (!followSet.contains(upUid)) {
                     mySelf.getFollowUps().add(upEntity);
+                    userEntityRepository.save(mySelf);
                 }
             }
-            case UNFOLLOW -> mySelf.getFollowUps().remove(upEntity);
+            case UNFOLLOW -> {
+                if (followSet.contains(upUid)) {
+                    userEntityRepository.removeFollowUpRelation(myUid, upUid);
+                }
+            }
         }
-
-        userEntityRepository.save(mySelf);
 
         return userService.userVO(myUid, true);
     }
