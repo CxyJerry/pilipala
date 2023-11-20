@@ -63,7 +63,7 @@ public class DanmakuServiceImpl implements DanmakuService {
         danmaku = mongoTemplate.save(danmaku);
 
         // 更新弹幕数
-        mongoTemplate.upsert(new Query(Criteria.where("_id").is(danmakuDto.getId())
+        mongoTemplate.upsert(new Query(Criteria.where("cid").is(danmakuDto.getId())
                         .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
                 new Update().inc("barrageCount", 1), VodStatistics.class);
 
