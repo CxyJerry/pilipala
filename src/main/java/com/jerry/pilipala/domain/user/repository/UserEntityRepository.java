@@ -55,4 +55,7 @@ public interface UserEntityRepository extends Neo4jRepository<UserEntity, String
      */
     @Query("MATCH (user:`user` {uid: $userId})-[:Followed]->(followed:`user`) RETURN COUNT(followed)")
     int getFollowedUsersCount(@Param("userId") String userId);
+
+    @Query("MATCH (u:`user` {uid: $userId})-[r:Followed]->(f:`user` {uid: $followedUserId}) DELETE r")
+    void removeFollowUpRelation(@Param("userId") String userId, @Param("followedUserId") String followedUserId);
 }
