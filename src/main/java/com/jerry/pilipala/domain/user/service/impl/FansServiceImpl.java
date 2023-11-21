@@ -29,7 +29,7 @@ public class FansServiceImpl implements FansService {
     }
 
     @Override
-    public UserVO put(String upUid, Integer relation) {
+    public UserVO put(String upUid) {
         String myUid = (String) StpUtil.getLoginId();
         if (upUid.equals(myUid)) {
             throw new BusinessException("无须关注自己", StandardResponse.ERROR);
@@ -43,21 +43,15 @@ public class FansServiceImpl implements FansService {
                 .stream()
                 .map(UserEntity::getUid)
                 .collect(Collectors.toSet());
-        UserRelationEnum relationEnum = UserRelationEnum.parse(relation);
         UserEntity upEntity = userEntityRepository.findById(upUid).orElse(null);
-        switch (relationEnum) {
-            case FOLLOW -> {
-                if (!followSet.contains(upUid)) {
-                    mySelf.getFollowUps().add(upEntity);
-                    userEntityRepository.save(mySelf);
-                }
-            }
-            case UNFOLLOW -> {
-                if (followSet.contains(upUid)) {
-                    userEntityRepository.removeFollowUpRelation(myUid, upUid);
-                }
-            }
+
+        if (followSet.contains(upUid)) {
+            userEntityRepository.removeFollowUpRelation(myUid, upUid);
+        } else {
+            mySelf.getFollowUps().add(upEntity);
+            userEntityRepository.save(mySelf);
         }
+
 
         return userService.userVO(myUid, true);
     }
