@@ -5,7 +5,7 @@ import com.jerry.pilipala.application.vo.user.UserVO;
 import java.util.List;
 
 public interface FansService {
-    UserVO put(String upUid, Integer relation);
+    UserVO put(String upUid);
 
     List<UserVO> idles();
 
