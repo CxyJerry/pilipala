@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FansServiceImpl implements FansService {
@@ -27,7 +29,7 @@ public class FansServiceImpl implements FansService {
     }
 
     @Override
-    public UserVO put(String upUid, Integer relation) {
+    public UserVO put(String upUid) {
         String myUid = (String) StpUtil.getLoginId();
         if (upUid.equals(myUid)) {
             throw new BusinessException("无须关注自己", StandardResponse.ERROR);
@@ -37,18 +39,19 @@ public class FansServiceImpl implements FansService {
         if (Objects.isNull(mySelf)) {
             return null;
         }
+        Set<String> followSet = mySelf.getFollowUps()
+                .stream()
+                .map(UserEntity::getUid)
+                .collect(Collectors.toSet());
         UserEntity upEntity = userEntityRepository.findById(upUid).orElse(null);
-        UserRelationEnum relationEnum = UserRelationEnum.parse(relation);
-        switch (relationEnum) {
-            case FOLLOW -> {
-                if (!mySelf.getFollowUps().contains(upEntity)) {
-                    mySelf.getFollowUps().add(upEntity);
-                }
-            }
-            case UNFOLLOW -> mySelf.getFollowUps().remove(upEntity);
+
+        if (followSet.contains(upUid)) {
+            userEntityRepository.removeFollowUpRelation(myUid, upUid);
+        } else {
+            mySelf.getFollowUps().add(upEntity);
+            userEntityRepository.save(mySelf);
         }
 
-        userEntityRepository.save(mySelf);
 
         return userService.userVO(myUid, true);
     }

@@ -26,15 +26,13 @@ public class FansController {
      * 关注/取消关注
      *
      * @param upUid    upID
-     * @param relation 关注状态
      * @return userVO
      */
     @ApiOperation("关注/取消关注")
     @SaCheckLogin
     @PutMapping("/put")
-    public CommonResponse<?> put(@RequestParam("up_uid") @NotBlank(message = "用户ID不存在") String upUid,
-                                 @RequestParam("relation") @NotNull(message = "关系状态丢失") Integer relation) {
-        UserVO myUserVO = fansService.put(upUid, relation);
+    public CommonResponse<?> put(@RequestParam("up_uid") @NotBlank(message = "用户ID不存在") String upUid) {
+        UserVO myUserVO = fansService.put(upUid);
         return CommonResponse.success(myUserVO);
     }
 
