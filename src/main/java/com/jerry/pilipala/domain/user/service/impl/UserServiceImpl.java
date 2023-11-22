@@ -143,10 +143,10 @@ public class UserServiceImpl implements UserService {
         // redis 不存在，生成一个新的
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
         int expireMinutes = 1;
-        redisTemplate.opsForValue().set(loginCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
 
         smsService.sendCode(tel, code, expireMinutes);
-        // todo send message
+
+        redisTemplate.opsForValue().set(loginCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
     }
 
     @Override
@@ -159,9 +159,8 @@ public class UserServiceImpl implements UserService {
         // redis 不存在，生成一个新的
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
         int expireMinutes = 1;
-        redisTemplate.opsForValue().set(emailCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
-
         smsService.sendEmailCode(email, code, expireMinutes);
+        redisTemplate.opsForValue().set(emailCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
     }
 
     @Override
