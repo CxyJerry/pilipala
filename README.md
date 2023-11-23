@@ -19,7 +19,8 @@
 
 ## 项目介绍
 
-噼里啪啦视频弹幕网是一个专注于做视频点播的后端服务项目，通过对 [FFmpeg](https://github.com/FFmpeg/FFmpeg) 的集成，半遵循广电视频规格要求对视频规格进行限制（支持 1080P及以下规格视频），产出视频生产计划，并通过流水线+状态机完成视频转码。本项目持续更新中！
+噼里啪啦视频弹幕网是一个专注于做视频点播的后端服务项目，通过对 [FFmpeg](https://github.com/FFmpeg/FFmpeg)
+的集成，半遵循广电视频规格要求对视频规格进行限制（支持 1080P及以下规格视频），产出视频生产计划，并通过流水线+状态机完成视频转码。本项目持续更新中！
 
 ## 环境搭建
 
@@ -30,7 +31,9 @@
 3. 使用 `Maven` 完成依赖包导入
 4. 通过 `Docker Compose` 搭建 `Neo4j`、`Redis`、`MongoDB 集群`
 5. 完成 `application-dev.yml` 配置信息修改
-6. 启动 `PiliPalaApplication`
+6. 下载&配置 `ffmpeg`
+7. 导入初始化数据 `path.json`、`permission.json`、`role.json`
+8. 启动 `PiliPalaApplication`
 
 ### 测试环境
 
