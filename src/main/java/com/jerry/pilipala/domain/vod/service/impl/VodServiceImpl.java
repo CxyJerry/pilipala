@@ -2,11 +2,9 @@ package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
@@ -23,7 +21,6 @@ import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
 import com.jerry.pilipala.domain.vod.entity.mongo.distribute.VodDistributeInfo;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionRecord;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodPlayOffsetRecord;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.Thumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
@@ -47,7 +44,7 @@ import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
-import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
+import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.infrastructure.utils.SecurityTool;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +64,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,9 +85,6 @@ import java.util.stream.Collectors;
 public class VodServiceImpl implements VodService {
     private final FFprobe fFprobe;
     private final FFmpeg fFmpeg;
-
-    private final ObjectMapper mapper;
-
     private final MongoTemplate mongoTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -110,18 +103,20 @@ public class VodServiceImpl implements VodService {
 
     private final UserEntityRepository userEntityRepository;
     private final MessageService messageService;
+    private final JsonHelper jsonHelper;
 
 
-    public VodServiceImpl(ObjectMapper mapper,
-                          MongoTemplate mongoTemplate,
+    public VodServiceImpl(MongoTemplate mongoTemplate,
                           RedisTemplate<String, Object> redisTemplate,
                           ApplicationEventPublisher applicationEventPublisher,
                           FileConfig fileConfig,
                           UGCSchema ugcSchema,
                           @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor,
                           HttpServletResponse response,
-                          VodInfoRepository vodInfoRepository, UserEntityRepository userEntityRepository, MessageService messageService) {
-        this.mapper = mapper;
+                          VodInfoRepository vodInfoRepository,
+                          UserEntityRepository userEntityRepository,
+                          MessageService messageService,
+                          JsonHelper jsonHelper) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -132,6 +127,7 @@ public class VodServiceImpl implements VodService {
         this.vodInfoRepository = vodInfoRepository;
         this.userEntityRepository = userEntityRepository;
         this.messageService = messageService;
+        this.jsonHelper = jsonHelper;
     }
 
     {
@@ -163,7 +159,7 @@ public class VodServiceImpl implements VodService {
     @Override
     public String genFilename(PreUploadDTO preUploadDTO) {
         try {
-            String json = mapper.writeValueAsString(preUploadDTO);
+            String json = jsonHelper.as(preUploadDTO);
             String now = DATE_TIME_FORMATTER.format(LocalDateTime.now());
             String md5 = SecurityTool.getMd5(json);
             return "f%s%s".formatted(now, md5);
@@ -299,7 +295,7 @@ public class VodServiceImpl implements VodService {
             profiles = vodProfiles.getProfiles();
         }
 
-        log.info("cid [{}] -> select profiles: {}", cid, mapper.writerWithDefaultPrettyPrinter().writeValueAsString(profiles));
+        log.info("cid [{}] -> select profiles: {}", cid, jsonHelper.as(profiles));
         return profiles;
     }
 
@@ -328,7 +324,6 @@ public class VodServiceImpl implements VodService {
         }
         CompletableFuture.allOf(tasks).get();
     }
-
 
     /**
      * 转出缩略图
@@ -615,25 +610,26 @@ public class VodServiceImpl implements VodService {
                     .setCtime(author.getCtime())
                     .setFollowUps(new ArrayList<>());
         }
-        // 存入图数据库,准备推荐
-        VodInfoEntity exists = vodInfoRepository.findByCid(cid);
-        if (Objects.isNull(exists)) {
-            VodInfoEntity vodInfoEntity = new VodInfoEntity().setCid(vodInfo.getCid())
-                    .setBvId(vodInfo.getBvId())
-                    .setAuthorId(author.getUid().toString())
-                    .setAuthor(userEntity)
-                    .setCoverUrl(vodInfo.getCoverUrl())
-                    .setTitle(vodInfo.getTitle())
-                    .setDesc(vodInfo.getDesc())
-                    .setDuration(vodInfo.getDuration())
-                    .setGcType(vodInfo.getGcType())
-                    .setPartition(vodInfo.getPartition())
-                    .setSubPartition(vodInfo.getSubPartition())
-                    .setLabels(vodInfo.getLabels())
-                    .setCtime(vodInfo.getCtime());
-            vodInfoRepository.save(vodInfoEntity);
+        synchronized (this) {
+            // 存入图数据库,准备推荐
+            VodInfoEntity exists = vodInfoRepository.findByCid(cid);
+            if (Objects.isNull(exists)) {
+                VodInfoEntity vodInfoEntity = new VodInfoEntity().setCid(vodInfo.getCid())
+                        .setBvId(vodInfo.getBvId())
+                        .setAuthorId(author.getUid().toString())
+                        .setAuthor(userEntity)
+                        .setCoverUrl(vodInfo.getCoverUrl())
+                        .setTitle(vodInfo.getTitle())
+                        .setDesc(vodInfo.getDesc())
+                        .setDuration(vodInfo.getDuration())
+                        .setGcType(vodInfo.getGcType())
+                        .setPartition(vodInfo.getPartition())
+                        .setSubPartition(vodInfo.getSubPartition())
+                        .setLabels(vodInfo.getLabels())
+                        .setCtime(vodInfo.getCtime());
+                vodInfoRepository.save(vodInfoEntity);
+            }
         }
-
 
         // 推送站内信
         String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 已通过审核."
@@ -643,7 +639,6 @@ public class VodServiceImpl implements VodService {
                         vodInfo.getCid());
         messageService.send("", vodInfo.getUid(), msg);
     }
-
 
     @Override
     public Page<VodVO> page(String uid, Integer pageNo, Integer pageSize, String status) {
@@ -671,7 +666,7 @@ public class VodServiceImpl implements VodService {
         }
 
         // 构建出 vod info 视图列表
-        List<VodVO> vodVOList = buildVodVOList(vodInfoList, true);
+        List<VodVO> vodVOList = batchBuildVodVOWithoutQuality(vodInfoList, true);
 
         Query totalQuery = new Query(criteria);
         long count = mongoTemplate.count(totalQuery, BVod.class);
@@ -679,27 +674,32 @@ public class VodServiceImpl implements VodService {
         return page.setTotal(count).setPage(vodVOList);
     }
 
-    public List<VodVO> buildVodVOList(List<VodInfo> vodInfos, boolean needStatistics) {
+    public List<VodVO> batchBuildVodVOWithoutQuality(List<VodInfo> vodInfos, boolean needStatistics) {
         // 整理出所有的 cid
-        Collection<Long> cidSet = vodInfos.stream()
+        Collection<Object> cidSet = vodInfos.stream()
                 .map(VodInfo::getCid)
+                .map(String::valueOf)
                 .collect(Collectors.toSet());
 
-
+        Map<Long, VodStatistics> vodStatisticsMap;
         // statics 数据查询
-        Map<Long, VodInfoEntity> vodInfoEntityMap;
         if (needStatistics) {
-            List<VodInfoEntity> vodInfoEntities = vodInfoRepository.findAllById(cidSet);
-            vodInfoEntityMap = vodInfoEntities.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(VodInfoEntity::getCid, vodInfo -> vodInfo));
+            vodStatisticsMap = redisTemplate.opsForHash()
+                    .multiGet(
+                            VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY,
+                            cidSet
+                    ).stream()
+                    .filter(Objects::nonNull)
+                    .map(obj -> jsonHelper.convert(obj, VodStatistics.class)
+                    )
+                    .collect(Collectors.toMap(VodStatistics::getCid, v -> v));
         } else {
-            vodInfoEntityMap = new HashMap<>();
+            vodStatisticsMap = new HashMap<>();
         }
-
 
         return vodInfos.stream().map(vodInfo -> {
             // 查询统计信息
-            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vodInfo.getCid(), new VodInfoEntity());
+            VodStatistics statistics = vodStatisticsMap.getOrDefault(vodInfo.getCid(), new VodStatistics());
 
             // 创建视图模型
             return new VodVO()
@@ -714,18 +714,18 @@ public class VodServiceImpl implements VodService {
                     .setDesc(vodInfo.getDesc())
                     .setMtime(vodInfo.getMtime())
                     // 设置统计数据
-                    .setViewCount(vodInfoEntity.getViewCount())
-                    .setLikeCount(vodInfoEntity.getLikeCount())
-                    .setBarrageCount(vodInfoEntity.getBarrageCount())
-                    .setCommentCount(vodInfoEntity.getCommentCount())
-                    .setCoinCount(vodInfoEntity.getCoinCount())
-                    .setCollectCount(vodInfoEntity.getCollectCount())
-                    .setShareCount(vodInfoEntity.getShareCount());
+                    .setViewCount(statistics.getViewCount())
+                    .setLikeCount(statistics.getLikeCount())
+                    .setBarrageCount(statistics.getBarrageCount())
+                    .setCommentCount(statistics.getCommentCount())
+                    .setCoinCount(statistics.getCoinCount())
+                    .setCollectCount(statistics.getCollectCount())
+                    .setShareCount(statistics.getShareCount());
         }).toList();
     }
 
     @Override
-    public BVodVO videos(String bvid) {
+    public BVodVO videos(String bvid, Long cid) {
         BVodVO bVodVO = new BVodVO();
 
         // 查询出 bvod
@@ -742,139 +742,152 @@ public class VodServiceImpl implements VodService {
                         .and("status").is(VodStatusEnum.PASSED)),
                 VodInfo.class);
         if (CollectionUtil.isEmpty(vodInfoList)) {
-            throw new BusinessException("稿件未开放", StandardResponse.ERROR);
+            throw BusinessException.businessError("稿件未开放");
         }
 
         // 取出所有的可播放的 vod 的 cid,查询统计信息
-        Collection<Object> cidList = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
+        Collection<Object> cidCollection = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
 
-        Map<Long, VodInfoEntity> vodInfoEntityMap = redisTemplate.opsForHash()
-                .multiGet(VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY,
-                        cidList.stream().map(String::valueOf).collect(Collectors.toSet()))
-                .stream()
-                .filter(Objects::nonNull)
-                .map(v -> mapper.convertValue(v, VodInfoEntity.class))
-                .collect(Collectors.toMap(VodInfoEntity::getCid, v -> v));
-
-        List<VodStatistics> vodStatisticsList = mongoTemplate.find(
-                new Query(Criteria.where("cid").in(cidList)
-                        .and("data").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                VodStatistics.class);
-
-        Map<Long, VodStatistics> staticsMap = vodStatisticsList.stream()
-                .collect(Collectors.toMap(VodStatistics::getCid, vodStatics -> vodStatics));
-
+        // 查询统计信息
+        Map<Long, VodStatistics> staticsMap =
+                batchQueryVodStatistics(cidCollection.stream().map(Object::toString).collect(Collectors.toSet()));
 
         // 查询用户观看数据
-        Object loginId = StpUtil.getLoginId("");
-        Map<Long, VodPlayOffsetRecord> vodPlayRecordMap;
-        if (Objects.nonNull(loginId)) {
-            // 查询视频观看数据
-            Query userPlayInfoQuery = new Query(
-                    Criteria.where("uid").is(loginId)
-                            .and("cid").in(bVod.getCidList())
-            );
-            List<VodPlayOffsetRecord> vodPlayOffsetRecords = mongoTemplate.find(userPlayInfoQuery, VodPlayOffsetRecord.class);
-            vodPlayRecordMap = vodPlayOffsetRecords.stream()
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toMap(VodPlayOffsetRecord::getCid, vodPlayOffsetRecord -> vodPlayOffsetRecord));
-        } else {
-            vodPlayRecordMap = Collections.emptyMap();
-        }
+        Map<Long, Integer> vodPlayRecordMap = batchQueryPlayOffset(cidCollection);
 
         // 查询投稿人信息
-        User user = mongoTemplate.findById(new ObjectId(bVod.getUid()), User.class);
-        if (Objects.isNull(user)) {
-            throw new BusinessException("稿件信息异常", StandardResponse.ERROR);
-        }
-        PreviewUserVO previewUserVO = new PreviewUserVO().setUid(user.getUid().toString())
-                .setNickName(user.getNickname())
-                .setAvatar(user.getAvatar())
-                .setIntro(user.getIntro());
+        PreviewUserVO previewUserVO = queryAuthorPreviewVO(bVod.getUid());
         bVodVO.setAuthor(previewUserVO);
-
 
         // 查询清晰度分发信息
         Query distributeQuery = new Query(Criteria.where("_id").in(bVod.getCidList()));
-        List<VodDistributeInfo> distributeInfoList = mongoTemplate.find(distributeQuery, VodDistributeInfo.class);
+        List<VodDistributeInfo> distributeInfoList = mongoTemplate
+                .find(distributeQuery, VodDistributeInfo.class);
         Map<Long, VodDistributeInfo> distributeInfoMap = distributeInfoList.stream()
-                .collect(Collectors.toMap(VodDistributeInfo::getCid, vodDistributeInfo -> vodDistributeInfo));
+                .collect(Collectors.toMap(VodDistributeInfo::getCid,
+                        vodDistributeInfo -> vodDistributeInfo));
 
         // 组装 vod 视图模型
-        List<VodVO> vodVOList = vodInfoList.stream().map(vod -> {
-            VodDistributeInfo vodDistributeInfo = distributeInfoMap.get(vod.getCid());
-            // 处理得到 quality 列表
-            List<QualityVO> qualityVOList = vodDistributeInfo.getQualityMap()
-                    .values()
-                    .stream()
-                    // 排除预览
-                    .filter(e -> !e.getQn().equals(Qn._PREVIEW.getQn()))
-                    .sorted(Comparator.comparing(Quality::getQn))
-                    .map(quality -> {
-                        Qn qn = Qn.valueOfQn(quality.getQn());
-                        String url = "/file/video/%s/%s/1".formatted(vodDistributeInfo.getCid(), qn.getDescription());
-                        return new QualityVO().setName(qn.getDescription()).setUrl(url);
-                    })
-                    .collect(Collectors.toList());
-
-            // 获取每个视频的观看偏移量
-            VodPlayOffsetRecord vodPlayOffsetRecord = vodPlayRecordMap.getOrDefault(
-                    vodDistributeInfo.getCid(),
-                    new VodPlayOffsetRecord()
-            );
-
-            // 获取统计数据
-            VodStatistics statics = staticsMap.getOrDefault(vod.getCid(), new VodStatistics());
-            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vod.getCid(), null);
-            if (Objects.isNull(vodInfoEntity)) {
-                vodInfoEntity = vodInfoRepository.findById(vod.getCid()).orElse(null);
-                if (Objects.isNull(vodInfoEntity)) {
-                    vodInfoEntity = new VodInfoEntity();
-                } else {
-                    redisTemplate.opsForHash().put(VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY, vod.getCid().toString(), vodInfoEntity);
-                }
-            }
-            statics.setViewCount(statics.getViewCount() + vodInfoEntity.getViewCount())
-                    .setLikeCount(statics.getLikeCount() + vodInfoEntity.getLikeCount())
-                    .setBarrageCount(statics.getBarrageCount() + vodInfoEntity.getBarrageCount())
-                    .setCommentCount(statics.getCommentCount() + vodInfoEntity.getCommentCount())
-                    .setCoinCount(statics.getCoinCount() + vodInfoEntity.getCoinCount())
-                    .setCollectCount(statics.getCollectCount() + vodInfoEntity.getCollectCount())
-                    .setShareCount(statics.getShareCount() + vodInfoEntity.getShareCount());
-
-            // 查询在线观看人数
-            Long onlineCount = redisTemplate.opsForZSet().size("online-".concat(String.valueOf(vod.getCid())));
-            if (Objects.isNull(onlineCount)) {
-                onlineCount = 0L;
-            }
-            // 组装视图模型
-            VodVO vodVO = new VodVO();
-            vodVO.setQuality(qualityVOList)
-                    .setBvId(vod.getBvId())
-                    .setCid(vod.getCid())
-                    .setCoverUrl(vod.getCoverUrl())
-                    .setTitle(vod.getTitle())
-                    .setGcType(vod.getGcType())
-                    .setPartition(vod.getPartition())
-                    .setSubPartition(vod.getSubPartition())
-                    .setLabels(vod.getLabels())
-                    .setDesc(vod.getDesc())
-                    .setOffset(vodPlayOffsetRecord.getTime())
-                    .setViewCount(statics.getViewCount())
-                    .setLikeCount(statics.getLikeCount())
-                    .setBarrageCount(statics.getBarrageCount())
-                    .setCommentCount(statics.getCommentCount())
-                    .setCoinCount(statics.getCoinCount())
-                    .setCollectCount(statics.getCollectCount())
-                    .setShareCount(statics.getShareCount())
-                    .setMtime(vod.getMtime())
-                    .setOnlineCount(onlineCount + 1);
-            return vodVO;
-        }).toList();
+        List<VodVO> vodVOList = batchBuildVodVO(vodInfoList, distributeInfoMap, vodPlayRecordMap, staticsMap);
 
         bVodVO.setVodList(vodVOList);
 
         return bVodVO;
+    }
+
+    @Override
+    public Map<Long, VodStatistics> batchQueryVodStatistics(Collection<Object> cidCollection) {
+        List<Object> list = redisTemplate.opsForHash()
+                .multiGet(
+                        VodCacheKeyEnum.HashKey.VOD_INFO_CACHE_KEY,
+                        cidCollection
+                );
+        return list.stream()
+                .filter(Objects::nonNull)
+                .map(obj -> jsonHelper.convert(obj, VodStatistics.class))
+                .collect(Collectors.toMap(VodStatistics::getCid, v -> v));
+    }
+
+    private Map<Long, Integer> batchQueryPlayOffset(Collection<Object> cidCollection) {
+        String loginId = StpUtil.getLoginId("");
+        Map<Long, Integer> vodPlayRecordMap;
+        if (Objects.nonNull(loginId)) {
+            // 查询视频观看数据
+            List<Integer> offsets = redisTemplate.opsForHash()
+                    .multiGet(VodCacheKeyEnum.HashKey.PLAY_OFFSET_CACHE_KEY.concat(loginId),
+                            cidCollection.stream().map(String::valueOf).collect(Collectors.toSet()))
+                    .stream()
+                    .map(offset -> Objects.isNull(offset) ? 0 : Integer.parseInt(offset.toString()))
+                    .toList();
+            vodPlayRecordMap = new HashMap<>();
+            List<Long> cidList = cidCollection.stream()
+                    .map(Object::toString)
+                    .map(Long::parseLong).toList();
+            for (int i = 0; i < cidList.size(); i++) {
+                vodPlayRecordMap.put(cidList.get(i), offsets.get(i));
+            }
+        } else {
+            vodPlayRecordMap = Collections.emptyMap();
+        }
+        return vodPlayRecordMap;
+    }
+
+    private List<VodVO> batchBuildVodVO(List<VodInfo> vodInfoList,
+                                        Map<Long, VodDistributeInfo> distributeInfoMap,
+                                        Map<Long, Integer> vodPlayRecordMap,
+                                        Map<Long, VodStatistics> staticsMap) {
+        return vodInfoList
+                .stream()
+                .map(vod -> {
+                    VodDistributeInfo vodDistributeInfo = distributeInfoMap.get(vod.getCid());
+                    // 处理得到 quality 列表
+                    List<QualityVO> qualityVOList = vodDistributeInfo.getQualityMap()
+                            .values()
+                            .stream()
+                            // 排除预览
+                            .filter(e -> !e.getQn().equals(Qn._PREVIEW.getQn()))
+                            .sorted(Comparator.comparing(Quality::getQn))
+                            .map(quality -> {
+                                Qn qn = Qn.valueOfQn(quality.getQn());
+                                String url = "/file/video/%s/%s/1".formatted(vodDistributeInfo.getCid(), qn.getDescription());
+                                return new QualityVO().setName(qn.getDescription()).setUrl(url);
+                            })
+                            .collect(Collectors.toList());
+
+                    // 获取每个视频的观看偏移量
+                    Integer playOffset = vodPlayRecordMap.getOrDefault(vod.getCid(), 0);
+
+                    // 获取统计数据
+                    VodStatistics statics = staticsMap.getOrDefault(vod.getCid(), new VodStatistics());
+
+                    statics.setViewCount(statics.getViewCount())
+                            .setLikeCount(statics.getLikeCount())
+                            .setBarrageCount(statics.getBarrageCount())
+                            .setCommentCount(statics.getCommentCount())
+                            .setCoinCount(statics.getCoinCount())
+                            .setCollectCount(statics.getCollectCount())
+                            .setShareCount(statics.getShareCount());
+
+                    // 查询在线观看人数
+                    Long onlineCount = redisTemplate.opsForZSet().size("online-".concat(String.valueOf(vod.getCid())));
+                    if (Objects.isNull(onlineCount)) {
+                        onlineCount = 0L;
+                    }
+                    // 组装视图模型
+                    VodVO vodVO = new VodVO();
+                    vodVO.setQuality(qualityVOList)
+                            .setBvId(vod.getBvId())
+                            .setCid(vod.getCid())
+                            .setCoverUrl(vod.getCoverUrl())
+                            .setTitle(vod.getTitle())
+                            .setGcType(vod.getGcType())
+                            .setPartition(vod.getPartition())
+                            .setSubPartition(vod.getSubPartition())
+                            .setLabels(vod.getLabels())
+                            .setDesc(vod.getDesc())
+                            .setOffset(playOffset)
+                            .setViewCount(statics.getViewCount())
+                            .setLikeCount(statics.getLikeCount())
+                            .setBarrageCount(statics.getBarrageCount())
+                            .setCommentCount(statics.getCommentCount())
+                            .setCoinCount(statics.getCoinCount())
+                            .setCollectCount(statics.getCollectCount())
+                            .setShareCount(statics.getShareCount())
+                            .setMtime(vod.getMtime())
+                            .setOnlineCount(onlineCount);
+                    return vodVO;
+                }).toList();
+    }
+
+    private PreviewUserVO queryAuthorPreviewVO(String uid) {
+        User user = mongoTemplate.findById(new ObjectId(uid), User.class);
+        if (Objects.isNull(user)) {
+            throw new BusinessException("稿件信息异常", StandardResponse.ERROR);
+        }
+        return new PreviewUserVO().setUid(user.getUid().toString())
+                .setNickName(user.getNickname())
+                .setAvatar(user.getAvatar())
+                .setIntro(user.getIntro());
     }
 
     @Override
@@ -894,14 +907,8 @@ public class VodServiceImpl implements VodService {
         QualityVO qualityVO = new QualityVO().setName(qnDescription)
                 .setUrl("/file/video/%s/%s/1".formatted(cid, qnDescription));
         // 查询投稿人信息
-        User user = mongoTemplate.findById(new ObjectId(vodInfo.getUid()), User.class);
-        if (Objects.isNull(user)) {
-            throw new BusinessException("稿件信息异常", StandardResponse.ERROR);
-        }
-        PreviewUserVO author = new PreviewUserVO().setUid(user.getUid().toString())
-                .setNickName(user.getNickname())
-                .setAvatar(user.getAvatar())
-                .setIntro(user.getIntro());
+        PreviewUserVO author = queryAuthorPreviewVO(vodInfo.getUid());
+
 
         VodVO vodVO = new VodVO()
                 .setCid(vodInfo.getCid())
@@ -931,31 +938,14 @@ public class VodServiceImpl implements VodService {
         }
 
         // 记录播放到的位置 -> 下次恢复播放
-        Query query = new Query(Criteria.where("uid").is(uid).and("cid").is(cid));
-        VodPlayOffsetRecord playRecord = mongoTemplate.findOne(query, VodPlayOffsetRecord.class);
-        if (Objects.isNull(playRecord)) {
-            playRecord = new VodPlayOffsetRecord().setUid(uid).setCid(cid).setTime(0);
-        }
-
-        playRecord.setTime(time);
-        mongoTemplate.save(playRecord);
+        redisTemplate.opsForHash().put(
+                VodCacheKeyEnum.HashKey.PLAY_OFFSET_CACHE_KEY.concat(uid),
+                cid.toString(),
+                time);
 
         // 统计在线人数
         redisTemplate.opsForZSet().add("online-%s".formatted(cid), uid, Instant.now().plus(5, ChronoUnit.SECONDS).toEpochMilli());
-        // 记录播放时间 -> 统计数据
-        // todo 写入 clickhouse
-//        VodPlayTimeRecord vodPlayTimeRecord = new VodPlayTimeRecord()
-//                .setTel(userInfoBO.getTel())
-//                .setCid(cid)
-//                .setTime(time);
-//        mongoTemplate.save(vodPlayTimeRecord);
-    }
 
-    @Override
-    public void updatePlayCount(Long cid) {
-        mongoTemplate.upsert(new Query(Criteria.where("cid").is(cid)
-                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("viewCount", 1), VodStatistics.class);
     }
 
 
@@ -965,14 +955,12 @@ public class VodServiceImpl implements VodService {
         List<String> bvIdList = vodInfoList.stream().map(VodInfo::getBvId).toList();
 
         List<BVod> bvodList = mongoTemplate.find(new Query(Criteria.where("_id").in(bvIdList)), BVod.class);
+
         // 整理出所有的 cid
-        Set<Long> cidSet = vodInfoList.stream().map(VodInfo::getCid).collect(Collectors.toSet());
+        Set<Object> cidSet = vodInfoList.stream().map(VodInfo::getCid).map(String::valueOf).collect(Collectors.toSet());
 
         // statics 数据查询
-        List<VodInfoEntity> vodInfoEntities = vodInfoRepository.findAllById(cidSet);
-        Map<Long, VodInfoEntity> vodInfoEntityMap = vodInfoEntities.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(VodInfoEntity::getCid, vodInfo -> vodInfo));
+        Map<Long, VodStatistics> vodStatisticsMap = batchQueryVodStatistics(cidSet);
 
         // 查询 up 主信息
         List<String> uidList = bvodList.stream().map(BVod::getUid).toList();
@@ -988,20 +976,20 @@ public class VodServiceImpl implements VodService {
 
             // 设置预览数据
             VodInfo vodInfo = vodInfoMap.get(bvod.getBvId());
-            VodInfoEntity vodInfoEntity = vodInfoEntityMap.getOrDefault(vodInfo.getCid(), new VodInfoEntity());
+            VodStatistics statistics = vodStatisticsMap.getOrDefault(vodInfo.getCid().toString(), new VodStatistics());
             previewBVodVO.setBvId(bvod.getBvId())
                     .setCoverUrl(vodInfo.getCoverUrl())
                     .setTitle(vodInfo.getTitle())
                     .setDesc(vodInfo.getDesc())
                     .setPartition(vodInfo.getPartition());
             // 设置统计数据
-            previewBVodVO.setViewCount(vodInfoEntity.getViewCount())
-                    .setLikeCount(vodInfoEntity.getLikeCount())
-                    .setBarrageCount(vodInfoEntity.getBarrageCount())
-                    .setCommentCount(vodInfoEntity.getCommentCount())
-                    .setCoinCount(vodInfoEntity.getCoinCount())
-                    .setCollectCount(vodInfoEntity.getCollectCount())
-                    .setShareCount(vodInfoEntity.getShareCount());
+            previewBVodVO.setViewCount(statistics.getViewCount())
+                    .setLikeCount(statistics.getLikeCount())
+                    .setBarrageCount(statistics.getBarrageCount())
+                    .setCommentCount(statistics.getCommentCount())
+                    .setCoinCount(statistics.getCoinCount())
+                    .setCollectCount(statistics.getCollectCount())
+                    .setShareCount(statistics.getShareCount());
 
             // 设置预览视频
             String url = "/file/video/%s/%s/1".formatted(vodInfo.getCid(), Qn._PREVIEW.getDescription());
@@ -1051,65 +1039,12 @@ public class VodServiceImpl implements VodService {
         }
 
         // 构建出 vod info 视图列表
-        List<VodVO> vodVOList = buildVodVOList(vodInfoList, false);
+        List<VodVO> vodVOList = batchBuildVodVOWithoutQuality(vodInfoList, false);
 
         Query totalQuery = new Query(criteria);
         long count = mongoTemplate.count(totalQuery, VodInfo.class);
 
         return page.setTotal(count).setPage(vodVOList);
-    }
-
-    @Override
-    public void interactive(String actionName, Long cid) {
-        VodInteractiveActionEnum actionEnum = VodInteractiveActionEnum.parse(actionName);
-        String uid = (String) StpUtil.getLoginId();
-        switch (actionEnum) {
-            case LIKE -> {
-                String likeKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(uid);
-                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid))) {
-                    redisTemplate.opsForSet().remove(likeKey, cid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("likeCount", -1), VodStatistics.class);
-                } else {
-                    redisTemplate.opsForSet().add(likeKey, cid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("likeCount", 1), VodStatistics.class);
-                }
-            }
-            case COIN -> {
-                String coinKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(cid.toString());
-                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, uid))) {
-                    redisTemplate.opsForSet().remove(coinKey, uid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("coinCount", -1), VodStatistics.class);
-                } else {
-                    redisTemplate.opsForSet().add(coinKey, uid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("coinCount", 1), VodStatistics.class);
-                }
-            }
-            case COLLECT -> {
-                String collectKey = UserCacheKeyEnum.SetKey.COLLECT_VOD_SET.concat(uid);
-                if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid))) {
-                    redisTemplate.opsForSet().remove(collectKey, cid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("collectCount", -1), VodStatistics.class);
-                } else {
-                    redisTemplate.opsForSet().add(collectKey, cid);
-                    mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                                    .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                            new Update().inc("collectCount", 1), VodStatistics.class);
-                }
-            }
-            case SHARE -> mongoTemplate.upsert(new Query(Criteria.where("_id").is(cid)
-                            .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                    new Update().inc("shareCount", 1), VodStatistics.class);
-        }
     }
 
     @Override

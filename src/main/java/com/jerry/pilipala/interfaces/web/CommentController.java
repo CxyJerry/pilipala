@@ -1,26 +1,35 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.CommentDTO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.domain.vod.service.CommentService;
+import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
+import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import io.swagger.annotations.ApiOperation;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import java.util.HashMap;
 
 @Validated
 @RestController
 @RequestMapping("/comment")
 public class CommentController {
     private final CommentService commentService;
+    private final InteractiveActionStrategy interactiveActionStrategy;
 
-    public CommentController(CommentService commentService) {
+    public CommentController(CommentService commentService,
+                             InteractiveActionStrategy interactiveActionStrategy) {
         this.commentService = commentService;
+
+        this.interactiveActionStrategy = interactiveActionStrategy;
     }
 
     /**
@@ -34,6 +43,10 @@ public class CommentController {
     @PostMapping("/post")
     public CommonResponse<?> post(@RequestBody @Valid CommentDTO commentDTO) {
         CommentVO commentVO = commentService.post(commentDTO);
+
+        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
+        params.put("cid", commentDTO.getCid());
+        interactiveActionStrategy.trigger(VodInteractiveActionEnum.COMMENT, params);
         return CommonResponse.success(commentVO);
     }
 

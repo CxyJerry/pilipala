@@ -1,11 +1,11 @@
 package com.jerry.pilipala.infrastructure.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
 import com.jerry.pilipala.infrastructure.config.LimitConfig;
+import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -20,14 +20,15 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RateLimitFilter implements Filter {
     private final LimitConfig limitConfig;
-    private final ObjectMapper mapper;
+    private final JsonHelper jsonHelper;
     private final Cache<String, Integer> requestCountCache = CacheBuilder.newBuilder()
             .expireAfterWrite(1, TimeUnit.SECONDS)
             .build();
 
-    public RateLimitFilter(LimitConfig limitConfig, ObjectMapper mapper) {
+    public RateLimitFilter(LimitConfig limitConfig,
+                           JsonHelper jsonHelper) {
         this.limitConfig = limitConfig;
-        this.mapper = mapper;
+        this.jsonHelper = jsonHelper;
     }
 
     @Override
@@ -47,7 +48,7 @@ public class RateLimitFilter implements Filter {
             httpServletResponse.setStatus(500);
             httpServletResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
             httpServletResponse.setCharacterEncoding("utf-8");
-            servletResponse.getWriter().write(mapper.writeValueAsString(response));
+            servletResponse.getWriter().write(jsonHelper.as(response));
         } else {
             requestCountCache.put(ip, count + 1);
             filterChain.doFilter(servletRequest, servletResponse);

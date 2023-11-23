@@ -1,7 +1,7 @@
 package com.jerry.pilipala.domain.vod.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
+import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -16,10 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class DanmakuSseManager {
     private final Map<Long, Map<String, SseEmitter>> danmakuEmmiterMap = new ConcurrentHashMap<>();
-    private final ObjectMapper mapper;
+    private final JsonHelper jsonHelper;
 
-    public DanmakuSseManager(ObjectMapper mapper) {
-        this.mapper = mapper;
+    public DanmakuSseManager(JsonHelper jsonHelper) {
+        this.jsonHelper = jsonHelper;
     }
 
     public SseEmitter create(Long cid, String uid) {
@@ -45,7 +45,7 @@ public class DanmakuSseManager {
             }
             for (SseEmitter emitter : vodEmmiterMap.values()) {
                 try {
-                    String json = mapper.writeValueAsString(danmakuVO);
+                    String json = jsonHelper.as(danmakuVO);
                     emitter.send(SseEmitter.event().data(json));
                 } catch (IOException e) {
                     log.error("弹幕推送失败，", e);

@@ -2,20 +2,27 @@ package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
 import com.jerry.pilipala.application.vo.vod.PreUploadVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
+import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
+import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
+import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
+import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import io.swagger.annotations.ApiOperation;
+import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,15 +31,20 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
+import java.util.Objects;
 
+@Slf4j
 @Validated
 @RestController
 @RequestMapping("/vod")
 public class VodController {
     private final VodService vodService;
+    private final InteractiveActionStrategy interactiveActionStrategy;
 
-    public VodController(VodServiceImpl vodService) {
+    public VodController(VodServiceImpl vodService, InteractiveActionStrategy interactiveActionStrategy) {
         this.vodService = vodService;
+        this.interactiveActionStrategy = interactiveActionStrategy;
     }
 
     /**
@@ -58,8 +70,22 @@ public class VodController {
      */
     @ApiOperation("获取BVID下可播放稿件全部清晰度")
     @GetMapping("/vod/{bvid}")
-    public CommonResponse<?> videos(@PathVariable("bvid") @NotBlank(message = "BVID不得为空") String bvid) {
-        BVodVO videos = vodService.videos(bvid);
+    public CommonResponse<?> videos(@PathVariable("bvid") @NotBlank(message = "BVID不得为空") String bvid, @RequestParam(value = "cid", required = false) Long cid) {
+        BVodVO videos = vodService.videos(bvid, cid);
+        if (Objects.isNull(cid)) {
+            cid = videos.getVodList().get(0).getCid();
+        }
+        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
+        params.put("cid", cid);
+        // 新增互动数据
+        VodInteractiveAction playAction;
+        try {
+            playAction = interactiveActionStrategy.trigger(VodInteractiveActionEnum.PLAY, params).get();
+        } catch (Exception e) {
+            log.error("play action id failed to generate,cause ", e);
+            throw BusinessException.businessError("play action id 生成失败");
+        }
+        videos.setActionId(playAction.getId());
         return CommonResponse.success(videos);
     }
 
@@ -113,8 +139,7 @@ public class VodController {
     @ApiOperation("重置转码任务")
     @SaCheckPermission("permission-manage")
     @GetMapping("/action/reset")
-    public CommonResponse<?> reset(@RequestParam("task_id")
-                                   @NotBlank(message = "任务ID不得为空") String taskId) {
+    public CommonResponse<?> reset(@RequestParam("task_id") @NotBlank(message = "任务ID不得为空") String taskId) {
         vodService.reset(taskId);
         return CommonResponse.success();
     }
@@ -129,14 +154,7 @@ public class VodController {
      */
     @ApiOperation("获取自己投递的稿件")
     @GetMapping("/content/page")
-    public CommonResponse<?> page(@RequestParam(value = "uid", required = false) String uid,
-                                  @RequestParam(value = "page_no", defaultValue = "1")
-                                  @Min(value = 1, message = "最小1")
-                                  @Max(value = 1000, message = "最大1000") Integer pageNo,
-                                  @RequestParam(value = "page_size", defaultValue = "10")
-                                  @Min(value = 1, message = "最小1")
-                                  @Max(value = 1000, message = "最大1000") Integer pageSize,
-                                  @RequestParam(value = "status", defaultValue = "") String status) {
+    public CommonResponse<?> page(@RequestParam(value = "uid", required = false) String uid, @RequestParam(value = "page_no", defaultValue = "1") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageNo, @RequestParam(value = "page_size", defaultValue = "10") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageSize, @RequestParam(value = "status", defaultValue = "") String status) {
         Page<VodVO> page = vodService.page(uid, pageNo, pageSize, status);
         return CommonResponse.success(page);
     }
@@ -147,13 +165,7 @@ public class VodController {
     @ApiOperation("获取需要审核的稿件")
     @SaCheckPermission("review-vod")
     @GetMapping("/review/page")
-    public CommonResponse<?> reviewPage(@RequestParam(value = "page_no", defaultValue = "1")
-                                        @Min(value = 1, message = "最小1")
-                                        @Max(value = 1000, message = "最大1000") Integer pageNo,
-                                        @RequestParam(value = "page_size", defaultValue = "10")
-                                        @Min(value = 1, message = "最小1")
-                                        @Max(value = 1000, message = "最大1000") Integer pageSize,
-                                        @RequestParam(value = "status", defaultValue = "handing") String status) {
+    public CommonResponse<?> reviewPage(@RequestParam(value = "page_no", defaultValue = "1") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageNo, @RequestParam(value = "page_size", defaultValue = "10") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageSize, @RequestParam(value = "status", defaultValue = "handing") String status) {
         Page<VodVO> page = vodService.reviewPage(pageNo, pageSize, status);
         return CommonResponse.success(page);
     }
@@ -168,8 +180,7 @@ public class VodController {
     @ApiOperation("审核稿件")
     @SaCheckPermission("review-vod")
     @PutMapping("/content/review")
-    public CommonResponse<?> review(@RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid,
-                                    @RequestParam("status") @NotBlank(message = "审核状态不得为空") String status) {
+    public CommonResponse<?> review(@RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid, @RequestParam("status") @NotBlank(message = "审核状态不得为空") String status) {
         vodService.review(cid, status);
         return CommonResponse.success();
     }
@@ -183,23 +194,14 @@ public class VodController {
      */
     @ApiOperation("更新用户播放到的时间")
     @PutMapping("/time/{bvId}/{cid}")
-    public void updatePlayTime(@PathVariable("bvId") @NotBlank(message = "BVID不得为空") String bvId,
-                               @PathVariable("cid") @NotNull(message = "稿件ID不得为空") Long cid,
-                               @RequestParam("time") @NotNull(message = "时间不得为空")
-                               @Min(value = 0, message = "时间至少是0") Integer time) {
+    public void updatePlayTime(@PathVariable("bvId") @NotBlank(message = "BVID不得为空") String bvId, @PathVariable("cid") @NotNull(message = "稿件ID不得为空") Long cid, @RequestParam("time") @NotNull(message = "时间不得为空") @Min(value = 0, message = "时间至少是0") Integer time, @RequestParam(value = "play_action_id", required = false) String playActionId) {
         vodService.updatePlayTime(bvId, cid, time);
-    }
+        // 新增互动数据
+        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
+        params.put("cid", cid);
+        params.put("play_action_id", playActionId);
+        interactiveActionStrategy.trigger(VodInteractiveActionEnum.UPDATE_TIME, params);
 
-    /**
-     * 增加播放次数
-     *
-     * @param cid 稿件ID
-     */
-    @ApiOperation("增加播放次数")
-    @PutMapping("/vod/play/{cid}")
-    @RateLimiter(count = 1, seconds = 10)
-    public void updatePlayCount(@PathVariable("cid") @NotNull(message = "稿件ID") Long cid) {
-        vodService.updatePlayCount(cid);
     }
 
 
@@ -209,12 +211,16 @@ public class VodController {
      * @param actionName 互动动作
      * @param cid        稿件ID
      */
-    @ApiOperation("更新互动数据")
+    @ApiOperation("更新视频互动数据")
     @SaCheckLogin
     @PutMapping("/vod/interactive/put/{name}")
-    public void updateInteractive(@PathVariable("name") @NotBlank(message = "互动动作丢失") String actionName,
-                                  @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
-        vodService.interactive(actionName, cid);
+    public void updateInteractive(@PathVariable("name") @NotBlank(message = "互动动作丢失") String actionName, @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
+
+        VodInteractiveActionEnum action = VodInteractiveActionEnum.parse(actionName);
+        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
+        params.put("cid", cid);
+        interactiveActionStrategy.trigger(action, params);
+
     }
 
     /**
@@ -225,8 +231,7 @@ public class VodController {
      */
     @ApiOperation("获取互动信息")
     @GetMapping("/vod/interaction/info/{cid}")
-    public CommonResponse<InteractionInfoVO> info(@PathVariable("cid")
-                                                  @NotNull(message = "稿件ID不得为空") Long cid) {
+    public CommonResponse<InteractionInfoVO> info(@PathVariable("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
         InteractionInfoVO interactionInfoVO = vodService.interactionInfo(cid);
         return CommonResponse.success(interactionInfoVO);
     }

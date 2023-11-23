@@ -5,10 +5,23 @@ import lombok.Getter;
 
 @Getter
 public enum VodInteractiveActionEnum {
+    UNKNOWN("unknown"),
+    FOLLOW("follow"),
+    UNFOLLOW("unfollow"),
+    PLAY("play"),
+    UPDATE_TIME("update_time"),
     LIKE("like"),
-    COIN("coin"),
+    CANCEL_LIKE("cancel_like"),
     COLLECT("collect"),
-    SHARE("share");
+    CANCEL_COLLECT("cancel_collect"),
+    SHARE("share"),
+    COIN("coin"),
+    COMMENT("comment"),
+    DELETE_COMMENT("delete_comment"),
+    BARRAGE("barrage"),
+    LEAVE("leave");
+
+
     private final String name;
 
     VodInteractiveActionEnum(String name) {

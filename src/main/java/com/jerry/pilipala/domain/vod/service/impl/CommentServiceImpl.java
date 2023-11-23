@@ -1,13 +1,11 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.application.dto.CommentDTO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Comment;
 import com.jerry.pilipala.domain.vod.repository.CommentRepository;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
@@ -19,10 +17,8 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,12 +71,6 @@ public class CommentServiceImpl implements CommentService {
                 .setParentId(commentDTO.getParentCommentId());
 
         comment = mongoTemplate.save(comment);
-
-        // 更新评论数
-        mongoTemplate.upsert(new Query(Criteria.where("_id").is(Long.parseLong(commentDTO.getCid()))
-                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("commentCount", 1), VodStatistics.class);
-
 
         // 构建评论模型
         CommentVO commentVO = new CommentVO();

@@ -38,6 +38,8 @@ spring:
 logging:
   level:
     org.springframework.data.mongodb.core: debug
+  file:
+    path: ./log/log.%d{yyyy-MM-dd}.log
 
 sa-token:
   token-name: 'pilipala'
@@ -47,6 +49,7 @@ sa-token:
   is-share: false
   token-style: uuid
   is-log: true
+
 sms:
   access-key: 7moGTMnPKZDcXF9RNGrujK3fY
   signature: PiliPala

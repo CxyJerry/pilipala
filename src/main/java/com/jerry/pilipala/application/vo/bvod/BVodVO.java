@@ -10,5 +10,8 @@ import lombok.experimental.Accessors;
 @EqualsAndHashCode(callSuper = true)
 public class BVodVO extends BaseBVodVO {
     private PreviewUserVO author;
-
+    /**
+     * 播放记录ID
+     */
+    private String actionId;
 }

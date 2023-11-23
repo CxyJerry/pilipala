@@ -1,14 +1,11 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.date.DateUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.PreviewVodVO;
 import com.jerry.pilipala.application.vo.vod.RecommendVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
-import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
@@ -23,34 +20,24 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class RecommendServiceImpl implements RecommendService {
     private final MongoTemplate mongoTemplate;
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final ObjectMapper mapper;
-
     private final VodService vodService;
     private final VodInfoRepository vodInfoRepository;
-    private final UserEntityRepository userEntityRepository;
-
 
     public RecommendServiceImpl(MongoTemplate mongoTemplate,
                                 RedisTemplate<String, Object> redisTemplate,
-                                ObjectMapper mapper,
                                 VodService vodService,
-                                VodInfoRepository vodInfoRepository,
-                                UserEntityRepository userEntityRepository) {
+                                VodInfoRepository vodInfoRepository) {
         this.mongoTemplate = mongoTemplate;
-        this.redisTemplate = redisTemplate;
-        this.mapper = mapper;
         this.vodService = vodService;
         this.vodInfoRepository = vodInfoRepository;
-        this.userEntityRepository = userEntityRepository;
     }
 
     @Override
@@ -102,12 +89,12 @@ public class RecommendServiceImpl implements RecommendService {
         Map<String, User> userEntityMap = userList.stream()
                 .collect(Collectors.toMap(u -> u.getUid().toString(), u -> u));
 
-        List<Long> cidList = vodInfoEntities.stream().map(VodInfoEntity::getCid).toList();
+        Set<Object> cidSet = vodInfoEntities.stream()
+                .map(VodInfoEntity::getCid)
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
 
-        List<VodStatistics> vodStatics = mongoTemplate.find(new Query(Criteria.where("cid").in(cidList)
-                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                VodStatistics.class);
-        Map<Long, VodStatistics> vodStaticsMap = vodStatics.stream().collect(Collectors.toMap(VodStatistics::getCid, v -> v));
+        Map<Long, VodStatistics> vodStatisticsMap = vodService.batchQueryVodStatistics(cidSet);
 
         return vodInfoEntities.stream().map(vodInfoEntity -> {
                     // 创建作者预览模型
@@ -122,7 +109,7 @@ public class RecommendServiceImpl implements RecommendService {
                     PreviewVodVO preview = new PreviewVodVO().setCid(vodInfoEntity.getCid())
                             .setUrl(url)
                             .setName(vodInfoEntity.getTitle());
-                    VodStatistics statics = vodStaticsMap.getOrDefault(vodInfoEntity.getCid(), new VodStatistics());
+                    VodStatistics statics = vodStatisticsMap.getOrDefault(vodInfoEntity.getCid(), new VodStatistics());
                     // 组装
                     return new PreviewBVodVO()
                             .setBvId(vodInfoEntity.getBvId())
@@ -130,13 +117,13 @@ public class RecommendServiceImpl implements RecommendService {
                             .setTitle(vodInfoEntity.getTitle())
                             .setDesc(vodInfoEntity.getDesc())
                             .setPartition(vodInfoEntity.getPartition())
-                            .setViewCount(vodInfoEntity.getViewCount() + statics.getViewCount())
-                            .setLikeCount(vodInfoEntity.getLikeCount() + statics.getLikeCount())
-                            .setBarrageCount(vodInfoEntity.getBarrageCount() + statics.getBarrageCount())
-                            .setCommentCount(vodInfoEntity.getCommentCount() + statics.getCommentCount())
-                            .setCoinCount(vodInfoEntity.getCoinCount() + statics.getCoinCount())
-                            .setCollectCount(vodInfoEntity.getCollectCount() + statics.getCollectCount())
-                            .setShareCount(vodInfoEntity.getShareCount() + statics.getShareCount())
+                            .setViewCount(statics.getViewCount())
+                            .setLikeCount(statics.getLikeCount())
+                            .setBarrageCount(statics.getBarrageCount())
+                            .setCommentCount(statics.getCommentCount())
+                            .setCoinCount(statics.getCoinCount())
+                            .setCollectCount(statics.getCollectCount())
+                            .setShareCount(statics.getShareCount())
                             .setAuthor(author)
                             .setPreview(preview)
                             .setDuration(vodInfoEntity.getDuration());

@@ -1,8 +1,8 @@
 package com.jerry.pilipala.infrastructure.advice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.infrastructure.annotations.IgnoreLog;
+import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -29,12 +29,12 @@ import java.util.Objects;
 @Component
 public class ApiLoggerAspect {
     private final HttpServletRequest request;
-    private final ObjectMapper objectMapper;
+    private final JsonHelper jsonHelper;
 
     public ApiLoggerAspect(HttpServletRequest request,
-                           ObjectMapper objectMapper) {
+                           JsonHelper jsonHelper) {
         this.request = request;
-        this.objectMapper = objectMapper;
+        this.jsonHelper = jsonHelper;
     }
 
     @Pointcut("execution(* com.jerry.pilipala.interfaces..*Controller.*(..))")
@@ -57,7 +57,7 @@ public class ApiLoggerAspect {
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
         if (!method.isAnnotationPresent(IgnoreLog.class)) {
-            log.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(logModel));
+            log.info(jsonHelper.as(logModel));
         }
 
         return result;
@@ -83,7 +83,7 @@ public class ApiLoggerAspect {
         long end = System.currentTimeMillis();
         logModel.setTimestamp(end)
                 .setCost(end - start);
-        log.info(objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(logModel));
+        log.info(jsonHelper.as(logModel));
     }
 
     private void parseRequest(ProceedingJoinPoint point, LogModel logModel) {

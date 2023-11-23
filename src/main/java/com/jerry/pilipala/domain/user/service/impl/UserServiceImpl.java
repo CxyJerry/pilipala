@@ -2,7 +2,6 @@ package com.jerry.pilipala.domain.user.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
@@ -18,6 +17,7 @@ import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.CaptchaUtil;
+import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -40,25 +40,24 @@ public class UserServiceImpl implements UserService {
     private final MongoTemplate mongoTemplate;
     private final SmsService smsService;
     private final UserEntityRepository userEntityRepository;
-    private final ObjectMapper mapper;
     private final MessageService messageService;
     private final HttpServletRequest request;
+    private final JsonHelper jsonHelper;
 
 
     public UserServiceImpl(RedisTemplate<String, Object> redisTemplate,
                            MongoTemplate mongoTemplate,
                            SmsService smsService,
                            UserEntityRepository userEntityRepository,
-                           ObjectMapper mapper,
                            MessageService messageService,
-                           HttpServletRequest request) {
+                           HttpServletRequest request, JsonHelper jsonHelper) {
         this.redisTemplate = redisTemplate;
         this.mongoTemplate = mongoTemplate;
         this.smsService = smsService;
         this.userEntityRepository = userEntityRepository;
-        this.mapper = mapper;
         this.messageService = messageService;
         this.request = request;
+        this.jsonHelper = jsonHelper;
     }
 
     @Override
@@ -189,7 +188,7 @@ public class UserServiceImpl implements UserService {
         UserVO userVO;
         if (!forceQuery) {
             // 如果缓存有，直接走缓存
-            userVO = mapper.convertValue(redisTemplate.opsForHash()
+            userVO = jsonHelper.convert(redisTemplate.opsForHash()
                     .get(UserCacheKeyEnum.HashKey.USER_VO_HASH_KEY, uid), UserVO.class);
             if (Objects.nonNull(userVO)) {
                 return userVO;
@@ -227,7 +226,7 @@ public class UserServiceImpl implements UserService {
                         Arrays.asList(uidSet.toArray()))
                 .stream()
                 .filter(Objects::nonNull)
-                .map(u -> mapper.convertValue(u, UserVO.class))
+                .map(u -> jsonHelper.convert(u, UserVO.class))
                 .collect(Collectors.toMap(UserVO::getUid, u -> u));
 
         uidSet.forEach(uid -> {
