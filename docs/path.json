@@ -1,0 +1,230 @@
+[
+  {
+    "_id": {
+      "$oid": "654a68ebbfdd8339d9fedb7b"
+    },
+    "path": "/gccenter/_apply",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375339870"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a69e4991e8d7542025812"
+    },
+    "path": "/gccenter/gcupload",
+    "permissionId": "65462553c09ca2772d18a8f0",
+    "deleted": true,
+    "ctime": {
+      "$numberLong": "1699375588364"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6a11991e8d754202581b"
+    },
+    "path": "/gccenter/gcupload/upload",
+    "permissionId": "65462553c09ca2772d18a8f0",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375633122"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6a36991e8d7542025821"
+    },
+    "path": "/gccenter/gcupload/text",
+    "permissionId": "65462553c09ca2772d18a8f0",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375670138"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6a55991e8d7542025828"
+    },
+    "path": "/gccenter/cmanager/vod-manager",
+    "permissionId": "65462553c09ca2772d18a8f0",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375701132"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6a82991e8d754202582b"
+    },
+    "path": "/gccenter/home",
+    "permissionId": "65462553c09ca2772d18a8f0",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375746623"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6ab2991e8d754202582e"
+    },
+    "path": "/gccenter/review",
+    "permissionId": "6546828f4745da2073d31d72",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375794337"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6acf991e8d7542025831"
+    },
+    "path": "/",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375823755"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6ad7991e8d7542025833"
+    },
+    "path": "/about",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375831419"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6aec991e8d7542025836"
+    },
+    "path": "/manage/permission",
+    "permissionId": "654a3008fa87895a7b75aac2",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375852247"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b02991e8d7542025839"
+    },
+    "path": "/manage/role",
+    "permissionId": "654a3008fa87895a7b75aac2",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375874185"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b0a991e8d754202583c"
+    },
+    "path": "/manage/user",
+    "permissionId": "654a3008fa87895a7b75aac2",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375882782"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b14991e8d754202583f"
+    },
+    "path": "/manage/p-path",
+    "permissionId": "654a3008fa87895a7b75aac2",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375892331"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b20991e8d7542025842"
+    },
+    "path": "/manage/apply",
+    "permissionId": "654a3008fa87895a7b75aac2",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375904062"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b36991e8d7542025845"
+    },
+    "path": "/player/:bvid",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375926064"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b43991e8d7542025848"
+    },
+    "path": "/review-player/:cid",
+    "permissionId": "6546828f4745da2073d31d72",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375939522"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b4f991e8d754202584b"
+    },
+    "path": "/partition/:partition",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375951140"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b56991e8d754202584e"
+    },
+    "path": "/search/",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375958041"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  },
+  {
+    "_id": {
+      "$oid": "654a6b5b991e8d7542025851"
+    },
+    "path": "/sphere/:uid",
+    "permissionId": "",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699375963204"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Path"
+  }
+]
