@@ -1,0 +1,47 @@
+[
+  {
+    "_id": {
+      "$oid": "65462604c09ca2772d18a8f5"
+    },
+    "name": "创作者",
+    "deleted": false,
+    "permissionIds": [
+      "65462553c09ca2772d18a8f0"
+    ],
+    "ctime": {
+      "$numberLong": "1699096068533"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Role"
+  },
+  {
+    "_id": {
+      "$oid": "654682aa4745da2073d31d73"
+    },
+    "name": "审核人员",
+    "deleted": false,
+    "permissionIds": [
+      "65462553c09ca2772d18a8f0",
+      "6546828f4745da2073d31d72"
+    ],
+    "ctime": {
+      "$numberLong": "1699119786597"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Role"
+  },
+  {
+    "_id": {
+      "$oid": "654a2fcffa87895a7b75aabd"
+    },
+    "name": "管理员",
+    "deleted": false,
+    "permissionIds": [
+      "65462553c09ca2772d18a8f0",
+      "6546828f4745da2073d31d72",
+      "654a3008fa87895a7b75aac2"
+    ],
+    "ctime": {
+      "$numberLong": "1699119786597"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Role"
+  }
+]

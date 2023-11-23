@@ -1,0 +1,38 @@
+[
+  {
+    "_id": {
+      "$oid": "65462553c09ca2772d18a8f0"
+    },
+    "name": "投递稿件",
+    "value": "post-vod",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699095891833"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Permission"
+  },
+  {
+    "_id": {
+      "$oid": "6546828f4745da2073d31d72"
+    },
+    "name": "审批稿件",
+    "value": "review-vod",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699119759857"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Permission"
+  },
+  {
+    "_id": {
+      "$oid": "654a3008fa87895a7b75aac2"
+    },
+    "name": "权限管理",
+    "value": "permission-manage",
+    "deleted": false,
+    "ctime": {
+      "$numberLong": "1699095891833"
+    },
+    "_class": "com.jerry.pilipala.domain.user.entity.mongo.Permission"
+  }
+]
