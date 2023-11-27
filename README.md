@@ -15,12 +15,19 @@
         <img alt="开源协议" src="https://img.shields.io/badge/%E5%BC%80%E6%BA%90%E5%8D%8F%E8%AE%AE-GPL-blue">
     </a>
     <a href="https://github.com/CxyJerry/pilipala/actions/workflows/docker-image.yml"><img src="https://github.com/CxyJerry/pilipala/actions/workflows/docker-image.yml/badge.svg"></a>
+   <a href="https://pilipala.cloud">
+      <img alt="Static Badge" src="https://img.shields.io/badge/%E4%BD%93%E9%AA%8C-%E9%93%BE%E6%8E%A5-gold">
+   </a>
 </div>
 
 ## 项目介绍
 
 噼里啪啦视频弹幕网是一个专注于做视频点播的后端服务项目，通过对 [FFmpeg](https://github.com/FFmpeg/FFmpeg)
 的集成，半遵循广电视频规格要求对视频规格进行限制（支持 1080P及以下规格视频），产出视频生产计划，并通过流水线+状态机完成视频转码。本项目持续更新中！
+
+## 体验地址
+
+#### <a href="https://pilipala.cloud">https://pilipala.cloud</a>
 
 ## 环境搭建
 
