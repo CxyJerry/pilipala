@@ -5,12 +5,13 @@ import cn.hutool.extra.template.Template;
 import cn.hutool.extra.template.TemplateConfig;
 import cn.hutool.extra.template.TemplateEngine;
 import cn.hutool.extra.template.TemplateUtil;
-import com.jerry.pilipala.domain.message.entity.Sms;
+import com.apistd.uni.UniResponse;
+import com.apistd.uni.sms.UniMessage;
+import com.apistd.uni.sms.UniSMS;
 import com.jerry.pilipala.domain.message.service.SmsService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.config.SmsConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -20,41 +21,41 @@ import org.springframework.web.client.RestTemplate;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Service
 public class SmsServiceImpl implements SmsService {
     @Value("${spring.mail.username}")
     private String sender;
-    private final RestTemplate restTemplate;
     private final SmsConfig smsConfig;
     private final JavaMailSenderImpl javaMailSender;
 
-    public SmsServiceImpl(RestTemplate restTemplate, SmsConfig smsConfig,
+    public SmsServiceImpl(SmsConfig smsConfig,
                           JavaMailSenderImpl javaMailSender) {
-        this.restTemplate = restTemplate;
         this.smsConfig = smsConfig;
         this.javaMailSender = javaMailSender;
     }
 
     @Override
     public void sendCode(String tel, String code, Integer expireMinutes) {
-        HashMap<String, Object> templateData = new HashMap<>();
+        HashMap<String, String> templateData = new HashMap<>();
         templateData.put("code", code);
-        templateData.put("ttl", expireMinutes);
-        Sms sms = new Sms().setTo(tel)
-                .setSignature("PiliPala")
+        templateData.put("ttl", String.valueOf(expireMinutes));
+
+        UniMessage message = UniSMS.buildMessage()
+                .setTo(tel)
+                .setSignature(smsConfig.getSignature())
                 .setTemplateId("pub_verif_login_ttl")
                 .setTemplateData(templateData);
-        Map map = restTemplate.postForObject("https://uni.apistd.com/?action=sms.message.send&accessKeyId=%s".formatted(smsConfig.getAccessKey()),
-                sms, Map.class);
-        if (Objects.isNull(map)) {
-            log.error("短信发送失败");
-        } else {
-            log.info("send sms ,response: {}", map);
+        try {
+            UniResponse res = message.send();
+            log.info("result: {}", res);
+        } catch (Exception e) {
+            log.error("send sms error: ", e);
+            throw BusinessException.businessError("短信验证码发送失败");
         }
+
+
     }
 
     @Override
