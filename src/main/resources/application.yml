@@ -8,5 +8,8 @@ spring:
   profiles:
     active: @activatedProperties@
 
+logging:
+  config: classpath:logback-spring.xml
+
 limit:
   ip-max-count: 100
