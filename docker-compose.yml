@@ -4,6 +4,8 @@ services:
     image: cxyjerry/pilipala:v1.0.0
     ports:
       - "8090:8080"
+    environment:
+      - TZ=Asia/Shanghai
     volumes:
       - /home/pilipala/log:/usr/log/
       - /home/pilipala/upload-dir:/usr/pilipala/target/upload-dir
