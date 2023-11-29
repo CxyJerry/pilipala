@@ -1055,13 +1055,13 @@ public class VodServiceImpl implements VodService {
         }
 
         String likeKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(uid);
-        String coinKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(cid.toString());
-        String collectKey = UserCacheKeyEnum.SetKey.COLLECT_VOD_SET.concat(uid);
+        String coinKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(uid);
+        String collectKey = VodCacheKeyEnum.SetKey.COLLECT_SET.concat(uid);
 
         return new InteractionInfoVO()
-                .setLiked(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid)))
-                .setCoined(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, uid)))
-                .setCollected(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid)));
+                .setLiked(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid.toString())))
+                .setCoined(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, cid.toString())))
+                .setCollected(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid.toString())));
     }
 
 

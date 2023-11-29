@@ -22,13 +22,13 @@ public class CoinInteractiveActionHandler extends InteractiveActionHandler {
         String cid = params.get("cid").toString();
         String uid = params.get("uid").toString();
 
-        String coinSetKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(cid);
-        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinSetKey, uid))) {
+        String coinSetKey = VodCacheKeyEnum.SetKey.COIN_SET.concat(uid);
+        if (Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinSetKey, cid))) {
             return null;
         }
 
         // 加入 coin 集合
-        redisTemplate.opsForSet().add(coinSetKey, uid);
+        redisTemplate.opsForSet().add(coinSetKey, cid);
 
         checkVodStatisticsExists(cid);
         incVodStatistics(cid, "coinCount", true);

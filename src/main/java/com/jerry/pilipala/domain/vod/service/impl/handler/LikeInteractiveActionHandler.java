@@ -27,10 +27,10 @@ public class LikeInteractiveActionHandler extends InteractiveActionHandler {
         String uid = interactiveAction.getUid();
         String likeSetKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(String.valueOf(uid));
         if (Boolean.TRUE.equals(redisTemplate.opsForSet()
-                .isMember(likeSetKey, uid))) {
+                .isMember(likeSetKey, cid))) {
             redisTemplate.opsForSet().remove(
                     likeSetKey,
-                    uid
+                    cid
             );
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "likeCount", false);
@@ -39,7 +39,7 @@ public class LikeInteractiveActionHandler extends InteractiveActionHandler {
         else {
             redisTemplate.opsForSet().add(
                     likeSetKey,
-                    uid
+                    cid
             );
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "likeCount", true);
