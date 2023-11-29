@@ -8,7 +8,6 @@ import com.jerry.pilipala.domain.user.service.FansService;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.infrastructure.enums.UserRelationEnum;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

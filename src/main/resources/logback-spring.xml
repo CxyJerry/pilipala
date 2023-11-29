@@ -10,8 +10,9 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- Daily rollover -->
             <fileNamePattern>/usr/log/log.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- Keep 7 days' worth of history -->
-            <maxHistory>7</maxHistory>
+            <maxHistory>60</maxHistory>
+
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <pattern>%red(%d{yyyy-MM-dd HH:mm:ss}) %green([%thread]) %highlight(%-5level) %boldMagenta(%logger{10}) : %cyan(%msg%n)

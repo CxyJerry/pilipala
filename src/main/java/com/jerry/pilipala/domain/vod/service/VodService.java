@@ -8,13 +8,16 @@ import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.vod.InteractionInfoVO;
 import com.jerry.pilipala.application.vo.vod.PreUploadVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
+import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.infrastructure.utils.Page;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 
@@ -94,11 +97,11 @@ public interface VodService {
 
     Page<VodVO> page(String uid, Integer pageNo, Integer pageSize, String type);
 
-    BVodVO videos(String bvid);
+    BVodVO videos(String bvid, Long cid);
+
+    Map<Long, VodStatistics> batchQueryVodStatistics(Collection<Object> cidCollection);
 
     void updatePlayTime(String bvId, Long cid, Integer time);
-
-    void updatePlayCount(Long cid);
 
 
     public List<PreviewBVodVO> buildPreviewBVodList(List<VodInfo> vodInfoList);
@@ -108,7 +111,6 @@ public interface VodService {
 
     Page<VodVO> reviewPage(Integer pageNo, Integer pageSize, String status);
 
-    void interactive(String actionName,Long cid);
 
     InteractionInfoVO interactionInfo(Long cid);
 

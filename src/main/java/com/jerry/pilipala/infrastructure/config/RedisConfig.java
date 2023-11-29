@@ -1,6 +1,7 @@
 package com.jerry.pilipala.infrastructure.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -15,9 +16,9 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 /**
  * @author 22454
  */
+@Slf4j
 @Order(1)
 @Configuration
-
 public class RedisConfig {
     private final ObjectMapper objectMapper;
 
@@ -52,4 +53,5 @@ public class RedisConfig {
         container.setConnectionFactory(connectionFactory);
         return container;
     }
+
 }

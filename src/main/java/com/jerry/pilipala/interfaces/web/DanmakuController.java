@@ -2,13 +2,17 @@ package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
+import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.DanmakuDTO;
 import com.jerry.pilipala.application.vo.vod.DanmakuResponse;
 import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.domain.vod.service.DanmakuSseManager;
+import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -17,6 +21,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.List;
 
 @Validated
@@ -25,11 +30,14 @@ import java.util.List;
 public class DanmakuController {
     private final DanmakuService danmakuService;
     private final DanmakuSseManager danmakuSseManager;
+    private final InteractiveActionStrategy interactiveActionStrategy;
 
     public DanmakuController(DanmakuService danmakuService,
-                             DanmakuSseManager danmakuSseManager) {
+                             DanmakuSseManager danmakuSseManager,
+                             InteractiveActionStrategy interactiveActionStrategy) {
         this.danmakuService = danmakuService;
         this.danmakuSseManager = danmakuSseManager;
+        this.interactiveActionStrategy = interactiveActionStrategy;
     }
 
     /**
@@ -43,6 +51,10 @@ public class DanmakuController {
     @PostMapping("/v3/")
     public DanmakuResponse<DanmakuValueVO> post(@RequestBody @Valid DanmakuDTO danmaku) {
         DanmakuValueVO send = danmakuService.send(danmaku);
+        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
+        params.put("cid", danmaku.getId());
+        interactiveActionStrategy.trigger(VodInteractiveActionEnum.BARRAGE, params);
+
         return new DanmakuResponse<DanmakuValueVO>().setCode(0).setData(send);
     }
 

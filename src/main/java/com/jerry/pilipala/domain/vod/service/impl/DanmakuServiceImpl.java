@@ -1,12 +1,10 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.application.dto.DanmakuDTO;
 import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
-import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Danmaku;
 import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.domain.vod.service.DanmakuSseManager;
@@ -17,11 +15,9 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -61,11 +57,6 @@ public class DanmakuServiceImpl implements DanmakuService {
                 .setColor(danmakuDto.getColor())
                 .setIp(RequestUtil.getIpAddress(request));
         danmaku = mongoTemplate.save(danmaku);
-
-        // 更新弹幕数
-        mongoTemplate.upsert(new Query(Criteria.where("cid").is(danmakuDto.getId())
-                        .and("date").is(DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd"))),
-                new Update().inc("barrageCount", 1), VodStatistics.class);
 
         DanmakuValueVO danmakuValueVO = new DanmakuValueVO();
         danmakuValueVO.setUid(uid)
