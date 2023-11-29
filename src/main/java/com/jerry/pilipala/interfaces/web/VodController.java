@@ -33,6 +33,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @Validated
@@ -215,12 +216,14 @@ public class VodController {
     @SaCheckLogin
     @PutMapping("/vod/interactive/put/{name}")
     public void updateInteractive(@PathVariable("name") @NotBlank(message = "互动动作丢失") String actionName, @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
-
         VodInteractiveActionEnum action = VodInteractiveActionEnum.parse(actionName);
         HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
         params.put("cid", cid);
-        interactiveActionStrategy.trigger(action, params);
-
+        try {
+            interactiveActionStrategy.trigger(action, params).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

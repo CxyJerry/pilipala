@@ -25,10 +25,10 @@ public class CollectInteractiveActionHandler extends InteractiveActionHandler {
         String uid = interactiveAction.getUid();
         String likeSetKey = VodCacheKeyEnum.SetKey.COLLECT_SET.concat(String.valueOf(uid));
         if (Boolean.TRUE.equals(redisTemplate.opsForSet()
-                .isMember(likeSetKey, uid))) {
+                .isMember(likeSetKey, cid))) {
             redisTemplate.opsForSet().remove(
                     likeSetKey,
-                    uid
+                    cid
             );
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "collectCount", false);
@@ -37,7 +37,7 @@ public class CollectInteractiveActionHandler extends InteractiveActionHandler {
         else {
             redisTemplate.opsForSet().add(
                     likeSetKey,
-                    uid
+                    cid
             );
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "collectCount", true);
