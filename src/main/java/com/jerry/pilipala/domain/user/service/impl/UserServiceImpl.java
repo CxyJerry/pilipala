@@ -143,10 +143,9 @@ public class UserServiceImpl implements UserService {
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
         int expireMinutes = 1;
 
-
+        smsService.sendCode(tel, code, expireMinutes);
 
         redisTemplate.opsForValue().set(loginCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
-        smsService.sendCode(tel, code, expireMinutes);
     }
 
     @Override
