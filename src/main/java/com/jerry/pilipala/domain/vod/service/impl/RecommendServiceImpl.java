@@ -14,6 +14,7 @@ import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.infrastructure.enums.PartitionEnum;
 import com.jerry.pilipala.infrastructure.enums.Qn;
 import com.jerry.pilipala.infrastructure.utils.Page;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -33,7 +34,7 @@ public class RecommendServiceImpl implements RecommendService {
 
     public RecommendServiceImpl(MongoTemplate mongoTemplate,
                                 RedisTemplate<String, Object> redisTemplate,
-                                VodService vodService,
+                                @Qualifier("vodService2") VodService vodService,
                                 VodInfoRepository vodInfoRepository) {
         this.mongoTemplate = mongoTemplate;
         this.vodService = vodService;

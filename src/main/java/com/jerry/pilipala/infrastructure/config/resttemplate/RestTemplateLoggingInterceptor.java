@@ -1,5 +1,6 @@
 package com.jerry.pilipala.infrastructure.config.resttemplate;
 
+import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +37,16 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
         // body
         ResponseInfo responseInfo = extractResponse(response);
 
-        log.info("call url: {},method: {}, request: {}, response: {}",
+        log.debug("call url: {},method: {}, request: {}, response: {}",
                 requestInfo.url,
                 requestInfo.method,
                 requestInfo,
                 responseInfo);
-        return response.getStatusCode().isError() ? null : response;
+
+        if (response.getStatusCode().isError()) {
+            throw BusinessException.businessError("第三方数据请求异常");
+        }
+        return response;
     }
 
     private RequestInfo extractRequest(HttpRequest httpRequest, byte[] body) {

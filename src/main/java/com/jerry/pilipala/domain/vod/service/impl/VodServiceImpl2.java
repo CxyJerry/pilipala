@@ -30,6 +30,7 @@ import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodProfiles;
 import com.jerry.pilipala.domain.vod.entity.neo4j.VodInfoEntity;
 import com.jerry.pilipala.domain.vod.repository.VodInfoRepository;
+import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.media.UGCSchema;
 import com.jerry.pilipala.domain.vod.service.media.encoder.Encoder;
@@ -70,7 +71,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -82,8 +83,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
-public class VodServiceImpl implements VodService {
+@Service("vodService2")
+public class VodServiceImpl2 implements VodService {
     private final FFprobe fFprobe;
     private final FFmpeg fFmpeg;
     private final MongoTemplate mongoTemplate;
@@ -105,19 +106,21 @@ public class VodServiceImpl implements VodService {
     private final UserEntityRepository userEntityRepository;
     private final MessageService messageService;
     private final JsonHelper jsonHelper;
+    private final FileService fileService;
 
 
-    public VodServiceImpl(MongoTemplate mongoTemplate,
-                          RedisTemplate<String, Object> redisTemplate,
-                          ApplicationEventPublisher applicationEventPublisher,
-                          FileConfig fileConfig,
-                          UGCSchema ugcSchema,
-                          @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor,
-                          HttpServletResponse response,
-                          VodInfoRepository vodInfoRepository,
-                          UserEntityRepository userEntityRepository,
-                          MessageService messageService,
-                          JsonHelper jsonHelper) {
+    public VodServiceImpl2(MongoTemplate mongoTemplate,
+                           RedisTemplate<String, Object> redisTemplate,
+                           ApplicationEventPublisher applicationEventPublisher,
+                           FileConfig fileConfig,
+                           UGCSchema ugcSchema,
+                           @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor,
+                           HttpServletResponse response,
+                           VodInfoRepository vodInfoRepository,
+                           UserEntityRepository userEntityRepository,
+                           MessageService messageService,
+                           JsonHelper jsonHelper,
+                           @Qualifier("fileServiceImpl2") FileService fileService) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -129,6 +132,7 @@ public class VodServiceImpl implements VodService {
         this.userEntityRepository = userEntityRepository;
         this.messageService = messageService;
         this.jsonHelper = jsonHelper;
+        this.fileService = fileService;
     }
 
     {
@@ -315,7 +319,7 @@ public class VodServiceImpl implements VodService {
         if (Objects.isNull(vod)) {
             throw new BusinessException("稿件不存在", StandardResponse.ERROR);
         }
-        String originFilePath = "%s/%s.%s".formatted(fileConfig.getWorkDir(), vod.getFilename(), vod.getExt());
+        String originFilePath = fileService.downloadVideo(vod.getFilename(), vod.getExt());
         // 规划转码规格
         List<Profile> profiles = schema(cid, vod);
         CompletableFuture<?>[] tasks = new CompletableFuture[profiles.size()];
@@ -324,6 +328,8 @@ public class VodServiceImpl implements VodService {
             tasks[i] = CompletableFuture.runAsync(() -> transcodeTask(profile, vod, originFilePath), taskExecutor);
         }
         CompletableFuture.allOf(tasks).get();
+        // 转码结束，删除本地临时文件
+        fileService.deleteVideoOfWorkSpace(vod.getFilename(), vod.getExt());
     }
 
     /**
@@ -333,48 +339,59 @@ public class VodServiceImpl implements VodService {
      */
     @Override
     public void transcodeThumbnails(Long cid) {
-        CompletableFuture.runAsync(() -> {
-            // 每两秒抽一帧
-            // ffmpeg -i f2023102822062151aed32d88f9984f5cb2f264e26c85b9.mp4 -vf "fps=0.5,scale=56:32" "thumbnails_%05d.png
-            Query query = new Query(Criteria.where("_id").is(cid));
-            Vod vod = mongoTemplate.findOne(query, Vod.class);
-            if (Objects.isNull(vod)) {
-                throw new BusinessException("稿件不存在", StandardResponse.ERROR);
-            }
-            String originVideoPath = "%s/%s.%s".formatted(fileConfig.getWorkDir(), vod.getFilename(), vod.getExt());
+        try {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    // 每两秒抽一帧
+                    // ffmpeg -i f2023102822062151aed32d88f9984f5cb2f264e26c85b9.mp4 -vf "fps=0.5,scale=56:32" "thumbnails_%05d.png
+                    Query query = new Query(Criteria.where("_id").is(cid));
+                    Vod vod = mongoTemplate.findOne(query, Vod.class);
+                    if (Objects.isNull(vod)) {
+                        throw new BusinessException("稿件不存在", StandardResponse.ERROR);
+                    }
+                    String originVideoPath = fileService.downloadVideo(vod.getFilename(), vod.getExt());
 
-            String thumbOutputDirPath = "%s/%s/thumbnails".formatted(fileConfig.getWorkDir(), vod.getFilename());
-            File thumbOutputDir = new File(thumbOutputDirPath);
-            if (!thumbOutputDir.exists()) {
-                thumbOutputDir.mkdirs();
-            }
+                    String thumbnailsDirPath = fileService.generateThumbnailsDirPath(vod.getFilename());
+                    String thumbnailsNamePattern = "%s/%s".formatted(thumbnailsDirPath, "%05d.png");
 
-            String thumbnailsNamePattern = "%s/%s".formatted(thumbOutputDirPath, "%05d.png");
-            FFmpegOutputBuilder builder = fFmpeg.builder()
-                    .setInput(originVideoPath)
-                    .overrideOutputFiles(true)
-                    .setVideoFilter("fps=0.5,scale=56:32")
-                    .addOutput(thumbnailsNamePattern);
+                    FFmpegOutputBuilder builder = fFmpeg.builder()
+                            .setInput(originVideoPath)
+                            .overrideOutputFiles(true)
+                            .setVideoFilter("fps=0.5,scale=56:32")
+                            .addOutput(thumbnailsNamePattern);
 
-            FFmpegExecutor executor = new FFmpegExecutor(fFmpeg, fFprobe);
-            executor.createJob(builder.done()).run();
+                    FFmpegExecutor executor = new FFmpegExecutor(fFmpeg, fFprobe);
+                    executor.createJob(builder.done()).run();
 
-            Double realDuration = vod.getVideo().getDuration();
-            int duration = realDuration.intValue();
-            List<Thumbnails> thumbnails = new ArrayList<>();
-            for (int i = 0; i <= duration; i += 2) {
-                Thumbnails thumbnailsPng = new Thumbnails();
-                thumbnailsPng.setTime(i).setUrl("%s/thumbnails/%05d.png".formatted(vod.getFilename(), i));
-                thumbnails.add(thumbnailsPng);
-            }
-            VodThumbnails vodThumbnails = new VodThumbnails()
-                    .setCid(cid)
-                    .setThumbnails(thumbnails);
-            mongoTemplate.save(vodThumbnails);
+                    Double realDuration = vod.getVideo().getDuration();
+                    int duration = realDuration.intValue();
+                    List<Thumbnails> thumbnails = new ArrayList<>();
+                    for (int i = 0; i <= duration; i += 2) {
+                        Thumbnails thumbnailsPng = new Thumbnails();
+                        thumbnailsPng.setTime(i).setUrl("%s/%05d.png".formatted(fileService.filePathRemoveWorkspace(thumbnailsDirPath), i));
+                        thumbnails.add(thumbnailsPng);
+                    }
 
-            log.info("cid: {},thumbnails generate completed.", cid);
-        });
+                    // 上传七牛
+                    fileService.uploadDirToOss(thumbnailsDirPath);
+                    fileService.deleteDirOfWorkSpace(thumbnailsDirPath);
+
+                    VodThumbnails vodThumbnails = new VodThumbnails()
+                            .setCid(cid)
+                            .setThumbnails(thumbnails);
+                    mongoTemplate.save(vodThumbnails);
+
+                    log.info("cid: {},thumbnails generate completed.", cid);
+                } catch (Exception e) {
+                    log.error("缩略图转码失败，cause ", e);
+                    log.error("缩略图转码失败");
+                }
+            }).get();
+        } catch (Exception e) {
+            log.error("缩略图转码任务失败，", e);
+        }
     }
+
 
     /**
      * 视频转码任务
@@ -387,17 +404,14 @@ public class VodServiceImpl implements VodService {
         Long cid = vod.getCid();
         // f2023101502380651aed32d88f9984f5cb2f264e26c85b9/16
         String saveTo = profile.getSaveTo();
-        String outputDir = "%s/%s".formatted(fileConfig.getWorkDir(), saveTo);
-        File dir = new File(outputDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+        String outputDir = fileService.generateTranscodeResSaveToPath(saveTo);
+
         // 16.mpd
         String outputFilename = "%s.%s".formatted(
                 profile.getEncoder().quality().getQn(),
                 profile.getFormat().getExt()
         );
-        String outputPath = "%s/%s/%s".formatted(fileConfig.getWorkDir(), profile.getSaveTo(), outputFilename);
+        String outputPath = "%s/%s".formatted(outputDir, outputFilename);
 
         Encoder encoder = profile.getEncoder();
         encoder.fitInput(vod);
@@ -450,15 +464,20 @@ public class VodServiceImpl implements VodService {
             vodDistributeInfo.setCid(cid)
                     .setReady(false)
                     .setQualityMap(new HashMap<>())
-                    .setFilename(filename)
-            ;
+                    .setFilename(filename);
         }
+
+        String saveToDir = fileService.generateTranscodeResSaveToPath(saveTo);
+        fileService.uploadDirToOss(saveToDir);
+        fileService.deleteDirOfWorkSpace(saveToDir);
+
         Quality quality = new Quality();
         quality.setQn(qn.getQn())
                 .setSaveTo(saveTo)
                 .setExt(ext)
                 .setType("auto");
         vodDistributeInfo.getQualityMap().put(qn.getQn(), quality);
+
         mongoTemplate.save(vodDistributeInfo);
         log.info("cid: {} distribute format {} successfully.", cid, qn.getDescription());
     }
@@ -493,6 +512,19 @@ public class VodServiceImpl implements VodService {
 
         VodDistributeInfo vodDistributeInfo = mongoTemplate.findOne(
                 new Query(Criteria.where("_id").is(cid)), VodDistributeInfo.class);
+
+        checkVideoStatus(cid, uid, vodDistributeInfo);
+
+        Qn qn = Qn.valueOfFormat(format);
+        Quality quality = vodDistributeInfo.getQualityMap().get(qn.getQn());
+
+        return fileService.video(name, quality);
+    }
+
+    private void checkVideoStatus(Long cid, String uid, VodDistributeInfo vodDistributeInfo) {
+        if (Objects.isNull(vodDistributeInfo)) {
+            throw BusinessException.businessError("稿件未准备妥当");
+        }
         boolean needCheckPermission = false;
         if (StringUtils.isNotBlank(uid)) {
             UserInfoBO userInfoBO = (UserInfoBO) StpUtil.getSession().get("user-info");
@@ -516,47 +548,10 @@ public class VodServiceImpl implements VodService {
                 throw new BusinessException("稿件未开放", StandardResponse.ERROR);
             }
 
-            if (Objects.nonNull(vodDistributeInfo) && !vodDistributeInfo.getReady()) {
+            if (!vodDistributeInfo.getReady()) {
                 throw new BusinessException("稿件未准备妥当", StandardResponse.ERROR);
             }
         }
-        if (Objects.isNull(vodDistributeInfo)) {
-            throw BusinessException.businessError("稿件未准备妥当");
-        }
-        Qn qn = Qn.valueOfFormat(format);
-        Quality quality = vodDistributeInfo.getQualityMap().get(qn.getQn());
-        String saveTo = quality.getSaveTo();
-
-        if (name.contains("stream")) {
-            outputFilename = "%s/%s".formatted(saveTo, name);
-        } else {
-            outputFilename = "%s/%s.%s".formatted(saveTo, qn.getQn(), quality.getExt());
-        }
-
-        String videoFilePath = "%s/%s".formatted(fileConfig.getWorkDir(), outputFilename);
-        File videoFile = new File(videoFilePath);
-        if (!videoFile.exists()) {
-            throw new BusinessException("视频文件丢失", StandardResponse.ERROR);
-        }
-        response.reset();
-        response.setContentType("application/dash+xml");
-        response.setCharacterEncoding("utf-8");
-        response.setContentLengthLong(videoFile.length());
-        response.setHeader("Content-Disposition", "attachment;filename=%s".formatted(outputFilename));
-
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(videoFile));) {
-            byte[] buff = new byte[1024];
-            OutputStream os = response.getOutputStream();
-            int i;
-            while ((i = bis.read(buff)) != -1) {
-                os.write(buff, 0, i);
-                os.flush();
-            }
-        } catch (IOException e) {
-            log.error("视频文件读取失败，", e);
-            throw new BusinessException("视频文件读取失败", StandardResponse.ERROR);
-        }
-        return null;
     }
 
     @Override

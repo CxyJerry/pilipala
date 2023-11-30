@@ -14,6 +14,8 @@ import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.infrastructure.utils.Page;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Collection;
 import java.util.List;
@@ -90,8 +92,9 @@ public interface VodService {
      * @param cid    稿件唯一ID
      * @param format 稿件清晰度名称
      * @param name   文件名
+     * @return
      */
-    void video(Long cid, String format, String name);
+    ResponseEntity<InputStreamResource> video(Long cid, String format, String name);
 
     void review(Long cid, String status);
 
