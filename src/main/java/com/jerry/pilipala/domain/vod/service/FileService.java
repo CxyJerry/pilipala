@@ -57,6 +57,7 @@ public interface FileService {
      * 下载文件
      *
      * @param filename 文件名
+     * @return
      */
-    void cover(String filename);
+    ResponseEntity<InputStreamResource> cover(String filename);
 }
