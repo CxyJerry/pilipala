@@ -1,5 +1,8 @@
 package com.jerry.pilipala.domain.vod.service;
 
+import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileService {
@@ -9,7 +12,7 @@ public interface FileService {
      * @param file 文件
      * @return 文件地址
      */
-    String upload(MultipartFile file);
+    String uploadCover(MultipartFile file);
 
     /**
      * 上传视频
@@ -35,10 +38,25 @@ public interface FileService {
      */
     void saveFile(String filepath, MultipartFile file);
 
+    String downloadVideo(String filename, String ext);
+
+    void deleteVideoOfWorkSpace(String filename, String ext);
+
+    String generateThumbnailsDirPath(String filename);
+
+    String generateTranscodeResSaveToPath(String saveTo);
+
+    String filePathRemoveWorkspace(String path);
+
+    void uploadDirToOss(String dirPath);
+
+    void deleteDirOfWorkSpace(String dirPath);
+
+    ResponseEntity<InputStreamResource> video(String name, Quality quality);
     /**
      * 下载文件
      *
      * @param filename 文件名
      */
-    void download(String filename);
+    void cover(String filename);
 }

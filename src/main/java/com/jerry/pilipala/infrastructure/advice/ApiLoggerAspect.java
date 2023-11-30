@@ -2,6 +2,7 @@ package com.jerry.pilipala.infrastructure.advice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jerry.pilipala.infrastructure.annotations.IgnoreLog;
+import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import lombok.Data;
@@ -49,7 +50,7 @@ public class ApiLoggerAspect {
         // 解析请求参数
         parseRequest(point, logModel);
         // 设置返回值
-        logModel.setResponse(result);
+        logModel.setResponse(result instanceof CommonResponse ? result : "NoSerializationRequired");
         long end = System.currentTimeMillis();
         logModel.setTimestamp(end)
                 .setCost(end - start);

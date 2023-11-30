@@ -1,5 +1,6 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
+import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.service.FileService;
@@ -10,9 +11,11 @@ import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -48,7 +51,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public String upload(MultipartFile file) {
+    public String uploadCover(MultipartFile file) {
         String ext = parseExt(file);
         String uploadFilename = DATE_TIME_FORMATTER.format(LocalDateTime.now()) + "." + ext;
         String filepath = fileConfig.getWorkDir() + '/' + uploadFilename;
@@ -76,7 +79,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class,value = "multiTransactionManager")
+    @Transactional(rollbackFor = Exception.class, value = "multiTransactionManager")
     public void uploadVideo(MultipartFile file, Long cid) {
         String ext = parseExt(file);
         if (!Arrays.asList(SUPPORT_VIDEO_CONTAINER).contains(ext)) {
@@ -131,7 +134,47 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void download(String filename) {
+    public String downloadVideo(String filename, String ext) {
+        return null;
+    }
+
+    @Override
+    public void deleteVideoOfWorkSpace(String filename, String ext) {
+
+    }
+
+    @Override
+    public String generateThumbnailsDirPath(String filename) {
+        return null;
+    }
+
+    @Override
+    public String generateTranscodeResSaveToPath(String saveTo) {
+        return null;
+    }
+
+    @Override
+    public String filePathRemoveWorkspace(String path) {
+        return null;
+    }
+
+    @Override
+    public void uploadDirToOss(String dirPath) {
+
+    }
+
+    @Override
+    public void deleteDirOfWorkSpace(String dirPath) {
+
+    }
+
+    @Override
+    public ResponseEntity<InputStreamResource> video(String name, Quality quality) {
+        return null;
+    }
+
+    @Override
+    public void cover(String filename) {
         File file = new File(fileConfig.getWorkDir() + '/' + filename);
         if (!file.exists()) {
             throw new BusinessException("文件不存在", StandardResponse.ERROR);

@@ -46,7 +46,7 @@ public class JsonHelper {
         try {
             return mapper.writeValueAsString(obj);
         } catch (Exception e) {
-            log.error("json 转换失败");
+            log.error("json 转换失败",e);
             throw BusinessException.businessError("json 转换失败");
         }
     }

@@ -138,7 +138,6 @@ public class VodController {
      * @return success
      */
     @ApiOperation("重置转码任务")
-    @SaCheckPermission("permission-manage")
     @GetMapping("/action/reset")
     public CommonResponse<?> reset(@RequestParam("task_id") @NotBlank(message = "任务ID不得为空") String taskId) {
         vodService.reset(taskId);

@@ -26,7 +26,7 @@ public class TranscodeActionEventHandler extends ActionEventHandler {
     private final VodService vodService;
     private final TaskExecutor taskExecutor;
 
-    public TranscodeActionEventHandler(VodService vodService,
+    public TranscodeActionEventHandler(@Qualifier("vodService2") VodService vodService,
                                        ApplicationEventPublisher applicationEventPublisher,
                                        MongoTemplate mongoTemplate,
                                        @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor) {

@@ -136,6 +136,11 @@
             <artifactId>uni-sdk</artifactId>
             <version>0.0.4</version>
         </dependency>
+        <dependency>
+            <groupId>com.qiniu</groupId>
+            <artifactId>qiniu-java-sdk</artifactId>
+            <version>7.11.0</version>
+        </dependency>
     </dependencies>
 
     <build>
