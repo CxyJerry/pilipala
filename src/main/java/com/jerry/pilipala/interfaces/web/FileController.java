@@ -101,7 +101,7 @@ public class FileController {
      */
     @ApiOperation("获取视频封面")
     @GetMapping("/cover/{filename}")
-    public void cover(@PathVariable("filename") @NotBlank(message = "稿件名称不得为空") String filename) {
-        fileService.cover(filename);
+    public ResponseEntity<InputStreamResource> cover(@PathVariable("filename") @NotBlank(message = "稿件名称不得为空") String filename) {
+        return fileService.cover(filename);
     }
 }

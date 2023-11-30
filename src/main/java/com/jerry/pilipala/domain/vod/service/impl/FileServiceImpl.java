@@ -174,7 +174,7 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void cover(String filename) {
+    public ResponseEntity<InputStreamResource> cover(String filename) {
         File file = new File(fileConfig.getWorkDir() + '/' + filename);
         if (!file.exists()) {
             throw new BusinessException("文件不存在", StandardResponse.ERROR);
@@ -198,6 +198,7 @@ public class FileServiceImpl implements FileService {
             log.error("下载失败，", e);
             throw new BusinessException("文件下载失败", StandardResponse.ERROR);
         }
+        return null;
     }
 
 }

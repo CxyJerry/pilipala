@@ -334,14 +334,14 @@ public class FileServiceImpl2 implements FileService {
     }
 
     @Override
-    public void cover(String filename) {
+    public ResponseEntity<InputStreamResource> cover(String filename) {
         DownloadUrl url = new DownloadUrl(qiniu.getImgDomain(), false, filename);
         Auth auth = Auth.create(qiniu.getAccessKey(), qiniu.getSecretKey());
         long deadline = System.currentTimeMillis() / 1000 + 3600;
         try {
             String urlString = url.buildURL(auth, deadline);
             log.info("获取图片: {}", urlString);
-            response.sendRedirect(urlString);
+            return restTemplate.getForEntity(urlString, InputStreamResource.class);
         } catch (IOException e) {
             log.error("图片资源获取失败,", e);
             throw BusinessException.businessError("图片资源获取失败");
