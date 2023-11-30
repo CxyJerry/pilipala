@@ -4,18 +4,11 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl2;
-import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl2;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
-import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.config.Qiniu;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
-import com.qiniu.common.QiniuException;
-import com.qiniu.storage.Configuration;
-import com.qiniu.storage.DownloadUrl;
-import com.qiniu.storage.Region;
-import com.qiniu.util.Auth;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
@@ -26,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.io.IOException;
 
 @Slf4j
 @RestController

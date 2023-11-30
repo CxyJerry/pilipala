@@ -158,9 +158,9 @@ public class UserServiceImpl implements UserService {
         // redis 不存在，生成一个新的
         code = CaptchaUtil.generatorCaptchaNumberByLength(6);
         int expireMinutes = 1;
-        redisTemplate.opsForValue().set(emailCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
-        smsService.sendEmailCode(email, code, expireMinutes);
 
+        smsService.sendEmailCode(email, code, expireMinutes);
+        redisTemplate.opsForValue().set(emailCodeKey, code, expireMinutes * 60, TimeUnit.SECONDS);
     }
 
     @Override
