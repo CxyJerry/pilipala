@@ -1,5 +1,6 @@
-package com.jerry.pilipala.domain.vod.service.impl.handler;
+package com.jerry.pilipala.domain.interactive.handler;
 
+import com.google.common.collect.Maps;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
@@ -23,6 +24,7 @@ public abstract class InteractiveActionHandler {
     }
 
     public VodInteractiveAction trigger(Map<String, Object> params) {
+        params = Objects.isNull(params) ? Maps.newHashMap() : params;
         String uid = (String) params.getOrDefault("uid", "unknown");
         long current = System.currentTimeMillis();
         String id = UUID.randomUUID().toString().replace("-", "");

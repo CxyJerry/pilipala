@@ -13,7 +13,7 @@ import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveActi
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
-import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
@@ -236,5 +236,14 @@ public class VodController {
     public CommonResponse<InteractionInfoVO> info(@PathVariable("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
         InteractionInfoVO interactionInfoVO = vodService.interactionInfo(cid);
         return CommonResponse.success(interactionInfoVO);
+    }
+
+    /**
+     * 用户离开视频
+     */
+    @ApiOperation("离开视频")
+    @GetMapping("/leave")
+    public void leave() {
+        interactiveActionStrategy.trigger(VodInteractiveActionEnum.LEAVE, Maps.newHashMap());
     }
 }

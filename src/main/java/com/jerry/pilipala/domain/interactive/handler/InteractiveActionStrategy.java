@@ -1,4 +1,4 @@
-package com.jerry.pilipala.domain.vod.service.impl.handler;
+package com.jerry.pilipala.domain.interactive.handler;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
@@ -24,7 +24,8 @@ public class InteractiveActionStrategy {
         this.defaultHandler = defaultHandler;
     }
 
-    public CompletableFuture<VodInteractiveAction> trigger(VodInteractiveActionEnum action, Map<String, Object> params) {
+    public CompletableFuture<VodInteractiveAction> trigger(VodInteractiveActionEnum action,
+                                                           Map<String, Object> params) {
         String uid = StpUtil.getLoginId("unknown");
         params.put("uid", uid);
         return CompletableFuture.supplyAsync(() -> handlerMap.getOrDefault(action, defaultHandler).trigger(params));

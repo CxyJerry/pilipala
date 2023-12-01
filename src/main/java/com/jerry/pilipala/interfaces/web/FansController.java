@@ -1,9 +1,10 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
+import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.domain.user.service.FansService;
-import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import io.swagger.annotations.ApiOperation;
@@ -38,7 +39,7 @@ public class FansController {
     public CommonResponse<?> put(@RequestParam("up_uid") @NotBlank(message = "用户ID不存在") String upUid) {
         UserVO myUserVO = fansService.put(upUid);
         // 新增互动数据
-        interactiveActionStrategy.trigger(VodInteractiveActionEnum.FOLLOW, null);
+        interactiveActionStrategy.trigger(VodInteractiveActionEnum.FOLLOW, Maps.newHashMap());
 
         return CommonResponse.success(myUserVO);
     }

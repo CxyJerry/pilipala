@@ -1,4 +1,4 @@
-package com.jerry.pilipala.domain.vod.service.impl.handler;
+package com.jerry.pilipala.domain.interactive.handler;
 
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import org.springframework.data.mongodb.core.MongoTemplate;

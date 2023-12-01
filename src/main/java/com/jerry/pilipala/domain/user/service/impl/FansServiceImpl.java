@@ -43,6 +43,9 @@ public class FansServiceImpl implements FansService {
                 .map(UserEntity::getUid)
                 .collect(Collectors.toSet());
         UserEntity upEntity = userEntityRepository.findById(upUid).orElse(null);
+        if (Objects.isNull(upEntity)) {
+            throw BusinessException.businessError("用户不存在");
+        }
 
         if (followSet.contains(upUid)) {
             userEntityRepository.removeFollowUpRelation(myUid, upUid);
