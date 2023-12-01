@@ -5,7 +5,7 @@ import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.CommentDTO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.domain.vod.service.CommentService;
-import com.jerry.pilipala.domain.vod.service.impl.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;

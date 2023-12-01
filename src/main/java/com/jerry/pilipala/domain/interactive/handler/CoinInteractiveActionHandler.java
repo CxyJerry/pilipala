@@ -1,4 +1,4 @@
-package com.jerry.pilipala.domain.vod.service.impl.handler;
+package com.jerry.pilipala.domain.interactive.handler;
 
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;

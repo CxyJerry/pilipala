@@ -1,4 +1,4 @@
-package com.jerry.pilipala.domain.vod.service.impl.handler;
+package com.jerry.pilipala.domain.interactive.handler;
 
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
@@ -9,9 +9,9 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class BarrageInteractiveActionHandler extends InteractiveActionHandler {
-    public BarrageInteractiveActionHandler(MongoTemplate mongoTemplate,
-                                           RedisTemplate<String, Object> redisTemplate) {
+public class DeleteCommentInteractiveActionHandler extends InteractiveActionHandler {
+    public DeleteCommentInteractiveActionHandler(MongoTemplate mongoTemplate,
+                                                 RedisTemplate<String, Object> redisTemplate) {
         super(mongoTemplate, redisTemplate);
     }
 
@@ -20,13 +20,15 @@ public class BarrageInteractiveActionHandler extends InteractiveActionHandler {
         VodInteractiveAction interactiveAction = super.trigger(params);
 
         String cid = params.get("cid").toString();
+
         checkVodStatisticsExists(cid);
-        incVodStatistics(cid, "barrageCount", true);
+        incVodStatistics(cid, "commentCount", false);
+
         return interactiveAction;
     }
 
     @Override
     public VodInteractiveActionEnum action() {
-        return VodInteractiveActionEnum.BARRAGE;
+        return VodInteractiveActionEnum.DELETE_COMMENT;
     }
 }
