@@ -1,13 +1,20 @@
 package com.jerry.pilipala.domain.message.service;
 
 import com.jerry.pilipala.application.vo.message.MessageVO;
+import com.jerry.pilipala.application.vo.message.TemplateVO;
+import com.jerry.pilipala.application.vo.message.UnreadMessageCountVO;
 import com.jerry.pilipala.infrastructure.utils.Page;
 
+import java.util.List;
+
 public interface MessageService {
-    void send(String senderId, String receiverId, String msg);
+    List<TemplateVO> messageTemplates();
 
-    long unreadCount(String uid);
+    void saveMessageTemplate(String templateName, String content);
 
-    Page<MessageVO> page(int pageNo, int pageSize);
+    List<UnreadMessageCountVO> unreadCount(String uid);
 
+    Page<MessageVO> page(String type, int pageNo, int pageSize);
+
+    void deleteMessageTemplate(String name);
 }

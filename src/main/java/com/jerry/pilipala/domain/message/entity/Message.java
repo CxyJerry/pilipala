@@ -13,9 +13,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Message {
     @Id
     private ObjectId id;
-    private String senderId;
     private String receiverId;
+    private String senderId;
     private String content;
+    private String type;
     private String status = MessageStatusEnum.UNREAD.getStatus();
     private Long ctime = System.currentTimeMillis();
 }

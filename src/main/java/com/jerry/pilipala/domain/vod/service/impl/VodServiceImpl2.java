@@ -12,6 +12,7 @@ import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.*;
+import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.MessageService;
 import com.jerry.pilipala.domain.user.entity.mongo.Permission;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
@@ -37,11 +38,11 @@ import com.jerry.pilipala.domain.vod.service.media.encoder.Encoder;
 import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.infrastructure.config.FileConfig;
 import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.Qn;
 import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
 import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
@@ -70,7 +71,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -94,45 +94,39 @@ public class VodServiceImpl2 implements VodService {
 
     private final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private final ApplicationEventPublisher applicationEventPublisher;
-
-    private final FileConfig fileConfig;
-
     private final UGCSchema ugcSchema;
     private final TaskExecutor taskExecutor;
-
-    private final HttpServletResponse response;
     private final VodInfoRepository vodInfoRepository;
 
     private final UserEntityRepository userEntityRepository;
     private final MessageService messageService;
     private final JsonHelper jsonHelper;
     private final FileService fileService;
-
+    private final MessageTrigger messageTrigger;
 
     public VodServiceImpl2(MongoTemplate mongoTemplate,
                            RedisTemplate<String, Object> redisTemplate,
                            ApplicationEventPublisher applicationEventPublisher,
-                           FileConfig fileConfig,
                            UGCSchema ugcSchema,
                            @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor,
-                           HttpServletResponse response,
                            VodInfoRepository vodInfoRepository,
                            UserEntityRepository userEntityRepository,
                            MessageService messageService,
+                           MessageTrigger messageTrigger,
                            JsonHelper jsonHelper,
-                           @Qualifier("fileServiceImpl2") FileService fileService) {
+                           @Qualifier("fileServiceImpl2") FileService fileService,
+                           MessageTrigger messageTrigger1) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.applicationEventPublisher = applicationEventPublisher;
-        this.fileConfig = fileConfig;
         this.ugcSchema = ugcSchema;
         this.taskExecutor = taskExecutor;
-        this.response = response;
         this.vodInfoRepository = vodInfoRepository;
         this.userEntityRepository = userEntityRepository;
         this.messageService = messageService;
         this.jsonHelper = jsonHelper;
         this.fileService = fileService;
+        this.messageTrigger = messageTrigger1;
     }
 
     {
@@ -223,7 +217,6 @@ public class VodServiceImpl2 implements VodService {
      *
      * @param videoPostDTO 稿件信息
      */
-    @Transactional(rollbackFor = Exception.class, value = "multiTransactionManager")
     public void post(VideoPostDTO videoPostDTO) {
         Query query = new Query(Criteria.where("_id").is(videoPostDTO.getBvId()));
         BVod bVod = mongoTemplate.findOne(query, BVod.class);
@@ -269,14 +262,16 @@ public class VodServiceImpl2 implements VodService {
             log.error("消息推送失败，稿件作者信息异常.");
             return;
         }
-        String msg = "亲爱的%s,感谢您的投稿，稿件 %s(bvId:%s,cid:%s) 正在处理中，请耐心等待!"
-                .formatted(
-                        author.getNickname(),
-                        vodInfo.getTitle(),
-                        vodInfo.getBvId(),
-                        vodInfo.getCid()
-                );
-        messageService.send("", bVod.getUid(), msg);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("username", author.getNickname());
+        variables.put("title", vodInfo.getTitle());
+        variables.put("bvid", vodInfo.getBvId());
+        variables.put("cid", vodInfo.getCid().toString());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.POST_VOD_NOTIFY,
+                bVod.getUid(),
+                variables
+        );
     }
 
     /**
@@ -587,12 +582,17 @@ public class VodServiceImpl2 implements VodService {
             vodInfoRepository.deleteById(vodInfo.getCid());
             if (statusEnum.equals(VodStatusEnum.FAIL)) {
                 // 推送站内信
-                String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 未通过审核,请联系审核人员进行原因了解."
-                        .formatted(author.getNickname(),
-                                vodInfo.getTitle(),
-                                vodInfo.getBvId(),
-                                vodInfo.getCid());
-                messageService.send("", vodInfo.getUid(), msg);
+                Map<String, String> variables = new HashMap<>();
+                variables.put("user_name", author.getNickname());
+                variables.put("user_id", author.getUid().toString());
+                variables.put("title", vodInfo.getTitle());
+                variables.put("bvid", vodInfo.getBvId());
+                variables.put("cid", vodInfo.getCid().toString());
+                messageTrigger.triggerSystemMessage(
+                        TemplateNameEnum.REVIEW_DENIED_NOTIFY,
+                        vodInfo.getUid(),
+                        variables
+                );
             }
             return;
         }
@@ -629,12 +629,17 @@ public class VodServiceImpl2 implements VodService {
         }
 
         // 推送站内信
-        String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 已通过审核."
-                .formatted(author.getNickname(),
-                        vodInfo.getTitle(),
-                        vodInfo.getBvId(),
-                        vodInfo.getCid());
-        messageService.send("", vodInfo.getUid(), msg);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("user_name", author.getNickname());
+        variables.put("user_id", author.getUid().toString());
+        variables.put("title", vodInfo.getTitle());
+        variables.put("bvid", vodInfo.getBvId());
+        variables.put("cid", vodInfo.getCid().toString());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.REVIEW_PASSED_NOTIFY,
+                vodInfo.getUid(),
+                variables
+        );
     }
 
     @Override

@@ -35,7 +35,7 @@ public abstract class InteractiveActionHandler {
                 .setInteractiveAction(action().getName())
                 .setCtime(current)
                 .setMtime(current);
-        mongoTemplate.save(interactiveAction);
+        interactiveAction = mongoTemplate.save(interactiveAction);
         return interactiveAction;
     }
 
