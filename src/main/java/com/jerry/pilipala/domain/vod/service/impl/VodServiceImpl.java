@@ -12,6 +12,7 @@ import com.jerry.pilipala.application.vo.bvod.BVodVO;
 import com.jerry.pilipala.application.vo.bvod.PreviewBVodVO;
 import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.*;
+import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.MessageService;
 import com.jerry.pilipala.domain.user.entity.mongo.Permission;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
@@ -41,6 +42,7 @@ import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.Qn;
 import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
 import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
@@ -105,6 +107,7 @@ public class VodServiceImpl implements VodService {
     private final UserEntityRepository userEntityRepository;
     private final MessageService messageService;
     private final JsonHelper jsonHelper;
+    private final MessageTrigger messageTrigger;
 
 
     public VodServiceImpl(MongoTemplate mongoTemplate,
@@ -117,7 +120,8 @@ public class VodServiceImpl implements VodService {
                           VodInfoRepository vodInfoRepository,
                           UserEntityRepository userEntityRepository,
                           MessageService messageService,
-                          JsonHelper jsonHelper) {
+                          JsonHelper jsonHelper,
+                          MessageTrigger messageTrigger) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -129,6 +133,7 @@ public class VodServiceImpl implements VodService {
         this.userEntityRepository = userEntityRepository;
         this.messageService = messageService;
         this.jsonHelper = jsonHelper;
+        this.messageTrigger = messageTrigger;
     }
 
     {
@@ -265,14 +270,18 @@ public class VodServiceImpl implements VodService {
             log.error("消息推送失败，稿件作者信息异常.");
             return;
         }
-        String msg = "亲爱的%s,感谢您的投稿，稿件 %s(bvId:%s,cid:%s) 正在处理中，请耐心等待!"
-                .formatted(
-                        author.getNickname(),
-                        vodInfo.getTitle(),
-                        vodInfo.getBvId(),
-                        vodInfo.getCid()
-                );
-        messageService.send("", bVod.getUid(), msg);
+
+        Map<String, String> variables = new HashMap<>();
+        variables.put("user_name", author.getNickname());
+        variables.put("user_id", author.getUid().toString());
+        variables.put("title", vodInfo.getTitle());
+        variables.put("bvid", vodInfo.getBvId());
+        variables.put("cid", vodInfo.getCid().toString());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.POST_VOD_NOTIFY,
+                bVod.getUid(),
+                variables
+        );
     }
 
     /**
@@ -592,12 +601,17 @@ public class VodServiceImpl implements VodService {
             vodInfoRepository.deleteById(vodInfo.getCid());
             if (statusEnum.equals(VodStatusEnum.FAIL)) {
                 // 推送站内信
-                String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 未通过审核,请联系审核人员进行原因了解."
-                        .formatted(author.getNickname(),
-                                vodInfo.getTitle(),
-                                vodInfo.getBvId(),
-                                vodInfo.getCid());
-                messageService.send("", vodInfo.getUid(), msg);
+                Map<String, String> variables = new HashMap<>();
+                variables.put("user_name", author.getNickname());
+                variables.put("user_id", author.getUid().toString());
+                variables.put("title", vodInfo.getTitle());
+                variables.put("bvid", vodInfo.getBvId());
+                variables.put("cid", vodInfo.getCid().toString());
+                messageTrigger.triggerSystemMessage(
+                        TemplateNameEnum.REVIEW_DENIED_NOTIFY,
+                        vodInfo.getUid(),
+                        variables
+                );
             }
             return;
         }
@@ -634,12 +648,17 @@ public class VodServiceImpl implements VodService {
         }
 
         // 推送站内信
-        String msg = "亲爱的%s,您的稿件：%s(bvId: %s,cid:%s) 已通过审核."
-                .formatted(author.getNickname(),
-                        vodInfo.getTitle(),
-                        vodInfo.getBvId(),
-                        vodInfo.getCid());
-        messageService.send("", vodInfo.getUid(), msg);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("user_name", author.getNickname());
+        variables.put("user_id", author.getUid().toString());
+        variables.put("title", vodInfo.getTitle());
+        variables.put("bvid", vodInfo.getBvId());
+        variables.put("cid", vodInfo.getCid().toString());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.REVIEW_PASSED_NOTIFY,
+                vodInfo.getUid(),
+                variables
+        );
     }
 
     @Override

@@ -6,7 +6,7 @@ import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
-import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.SmsService;
 import com.jerry.pilipala.domain.user.entity.mongo.Role;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
@@ -15,6 +15,7 @@ import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
+import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.CaptchaUtil;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
@@ -40,24 +41,24 @@ public class UserServiceImpl implements UserService {
     private final MongoTemplate mongoTemplate;
     private final SmsService smsService;
     private final UserEntityRepository userEntityRepository;
-    private final MessageService messageService;
     private final HttpServletRequest request;
     private final JsonHelper jsonHelper;
+    private final MessageTrigger messageTrigger;
 
 
     public UserServiceImpl(RedisTemplate<String, Object> redisTemplate,
                            MongoTemplate mongoTemplate,
                            SmsService smsService,
                            UserEntityRepository userEntityRepository,
-                           MessageService messageService,
-                           HttpServletRequest request, JsonHelper jsonHelper) {
+                           HttpServletRequest request, JsonHelper jsonHelper,
+                           MessageTrigger messageTrigger) {
         this.redisTemplate = redisTemplate;
         this.mongoTemplate = mongoTemplate;
         this.smsService = smsService;
         this.userEntityRepository = userEntityRepository;
-        this.messageService = messageService;
         this.request = request;
         this.jsonHelper = jsonHelper;
+        this.messageTrigger = messageTrigger;
     }
 
     @Override
@@ -103,13 +104,16 @@ public class UserServiceImpl implements UserService {
         StpUtil.login(user.getUid().toString());
 
         // 推送站内信
-        User finalUser = user;
-
-        String msg = "欢迎您，亲爱的%s, 您的账号于 %s ，在 IP: %s 进行登录。"
-                .formatted(finalUser.getNickname(),
-                        DateUtil.format(LocalDateTime.now(), "yyyy-MM-dd HH:mm:ss"),
-                        RequestUtil.getIpAddress(request));
-        messageService.send("", finalUser.getUid().toString(), msg);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("user_name", user.getNickname());
+        variables.put("time", DateUtil.format(LocalDateTime.now(),"yyyy-mm-dd hh:MM:ss"));
+        variables.put("ip", RequestUtil.getIpAddress(request));
+        variables.put("user_id", user.getUid().toString());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.LOGIN_NOTIFY,
+                user.getUid().toString(),
+                variables
+        );
 
 
         String roleId = user.getRoleId();

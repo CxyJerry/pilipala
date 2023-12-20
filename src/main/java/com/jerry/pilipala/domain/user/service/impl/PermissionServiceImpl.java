@@ -2,12 +2,14 @@ package com.jerry.pilipala.domain.user.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.vo.user.*;
+import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.MessageService;
 import com.jerry.pilipala.domain.user.entity.mongo.*;
 import com.jerry.pilipala.domain.user.service.PermissionService;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.enums.ApplyStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 public class PermissionServiceImpl implements PermissionService {
     private final MongoTemplate mongoTemplate;
     private final UserService userService;
+    private final MessageTrigger messageTrigger;
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -34,10 +37,12 @@ public class PermissionServiceImpl implements PermissionService {
 
     public PermissionServiceImpl(MongoTemplate mongoTemplate,
                                  UserService userService,
+                                 MessageTrigger messageTrigger,
                                  RedisTemplate<String, Object> redisTemplate,
                                  MessageService messageService) {
         this.mongoTemplate = mongoTemplate;
         this.userService = userService;
+        this.messageTrigger = messageTrigger;
         this.redisTemplate = redisTemplate;
         this.messageService = messageService;
     }
@@ -304,8 +309,13 @@ public class PermissionServiceImpl implements PermissionService {
         mongoTemplate.save(user);
 
         // 推送站内信
-        String msg = "亲爱的用户,您申请的权限已通过审核，感谢您的申请，PiliPala祝您使用愉快。";
-        messageService.send("", uid, msg);
+        Map<String, String> variables = new HashMap<>();
+        variables.put("user_name", user.getNickname());
+        messageTrigger.triggerSystemMessage(
+                TemplateNameEnum.APPLY_PASSED_NOTIFY,
+                user.getUid().toString(),
+                variables
+        );
 
         redisTemplate.delete(UserCacheKeyEnum.StringKey.USER_CACHE_KEY.concat(uid));
     }

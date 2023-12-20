@@ -1,20 +1,23 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.jerry.pilipala.application.dto.TemplateDTO;
 import com.jerry.pilipala.application.vo.message.MessageVO;
+import com.jerry.pilipala.application.vo.message.TemplateVO;
+import com.jerry.pilipala.application.vo.message.UnreadMessageCountVO;
 import com.jerry.pilipala.domain.message.service.MessageService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 @Validated
 @RestController
@@ -24,6 +27,27 @@ public class MessageController {
 
     public MessageController(MessageService messageService) {
         this.messageService = messageService;
+    }
+
+    @ApiOperation("保存消息模板")
+    @PostMapping("/template/save")
+    public CommonResponse<?> saveTemplate(@RequestBody @Valid TemplateDTO templateDTO) {
+        messageService.saveMessageTemplate(templateDTO.getName(), templateDTO.getContent());
+        return CommonResponse.success();
+    }
+
+    @ApiOperation("删除消息模板")
+    @DeleteMapping("/template/delete")
+    public CommonResponse<?> deleteTemplate(@RequestParam("name") String name) {
+        messageService.deleteMessageTemplate(name);
+        return CommonResponse.success();
+    }
+
+    @ApiOperation("消息模板列表")
+    @GetMapping("/template/get")
+    public CommonResponse<?> getTemplates() {
+        List<TemplateVO> templates = messageService.messageTemplates();
+        return CommonResponse.success(templates);
     }
 
     /**
@@ -38,8 +62,8 @@ public class MessageController {
         if (StringUtils.isBlank(uid)) {
             return CommonResponse.success(0);
         }
-        long unreadCount = messageService.unreadCount(uid);
-        return CommonResponse.success(unreadCount);
+        List<UnreadMessageCountVO> unreadMessageCountVOList = messageService.unreadCount(uid);
+        return CommonResponse.success(unreadMessageCountVOList);
     }
 
     /**
@@ -51,13 +75,15 @@ public class MessageController {
      */
     @ApiOperation("分页获取消息")
     @GetMapping("/page")
-    public CommonResponse<?> page(@RequestParam("page_no")
+    public CommonResponse<?> page(@RequestParam("type")
+                                  @NotBlank(message = "消息类型不得为空") String type,
+                                  @RequestParam("page_no")
                                   @Min(value = 1, message = "最小1")
                                   @Max(value = 1000, message = "最大1000") Integer pageNo,
                                   @RequestParam("page_size")
                                   @Min(value = 1, message = "最小1")
                                   @Max(value = 1000, message = "最大1000") Integer pageSize) {
-        Page<MessageVO> page = messageService.page(pageNo, pageSize);
+        Page<MessageVO> page = messageService.page(type, pageNo, pageSize);
         return CommonResponse.success(page);
     }
 

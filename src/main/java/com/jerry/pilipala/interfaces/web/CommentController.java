@@ -1,11 +1,10 @@
 package com.jerry.pilipala.interfaces.web;
 
-import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.CommentDTO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
-import com.jerry.pilipala.domain.vod.service.CommentService;
 import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.vod.service.CommentService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
@@ -39,7 +38,7 @@ public class CommentController {
      * @return success
      */
     @ApiOperation("发送评论")
-    @SaCheckLogin
+//    @SaCheckLogin
     @PostMapping("/post")
     public CommonResponse<?> post(@RequestBody @Valid CommentDTO commentDTO) {
         CommentVO commentVO = commentService.post(commentDTO);

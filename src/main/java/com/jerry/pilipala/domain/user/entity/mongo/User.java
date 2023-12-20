@@ -18,7 +18,7 @@ public class User {
     @TextIndexed
     private String nickname = "unknown";
     private String intro = "";
-    private String avatar = "";
+    private String avatar = "/file/cover/nav_icon_avatar_nor.svg";
     private String roleId = "";
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
