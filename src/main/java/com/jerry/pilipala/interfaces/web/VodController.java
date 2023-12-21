@@ -13,7 +13,6 @@ import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.service.VodService;
-import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
@@ -43,7 +42,7 @@ public class VodController {
     private final VodService vodService;
     private final InteractiveActionStrategy interactiveActionStrategy;
 
-    public VodController(VodServiceImpl vodService, InteractiveActionStrategy interactiveActionStrategy) {
+    public VodController(VodService vodService, InteractiveActionStrategy interactiveActionStrategy) {
         this.vodService = vodService;
         this.interactiveActionStrategy = interactiveActionStrategy;
     }

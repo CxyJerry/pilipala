@@ -26,7 +26,7 @@ public class TranscodeActionEventHandler extends ActionEventHandler {
     private final VodService vodService;
     private final TaskExecutor taskExecutor;
 
-    public TranscodeActionEventHandler(@Qualifier("vodService2") VodService vodService,
+    public TranscodeActionEventHandler(VodService vodService,
                                        ApplicationEventPublisher applicationEventPublisher,
                                        MongoTemplate mongoTemplate,
                                        @Qualifier("asyncServiceExecutor") TaskExecutor taskExecutor) {
@@ -52,8 +52,8 @@ public class TranscodeActionEventHandler extends ActionEventHandler {
         CompletableFuture.runAsync(() -> {
             VodHandleActionEvent actionEvent;
             try {
-                // 缩略图生产
-                vodService.transcodeThumbnails(event.getCid());
+                // todo 缩略图生产
+                // vodService.transcodeThumbnails(event.getCid());
                 // 视频转码
                 vodService.transcode(event.getCid());
 
