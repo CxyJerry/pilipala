@@ -8,11 +8,9 @@ import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.infrastructure.enums.SearchTypeEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -24,18 +22,15 @@ import java.util.stream.Collectors;
 @Service
 public class SearchServiceImpl implements SearchService {
     private final MongoTemplate mongoTemplate;
-    private final RedisTemplate<String, Object> redisTemplate;
 
     private final UserService userService;
 
     private final VodService vodService;
 
     public SearchServiceImpl(MongoTemplate mongoTemplate,
-                             RedisTemplate<String, Object> redisTemplate,
                              UserService userService,
-                             @Qualifier("vodService2") VodService vodService) {
+                             VodService vodService) {
         this.mongoTemplate = mongoTemplate;
-        this.redisTemplate = redisTemplate;
         this.userService = userService;
         this.vodService = vodService;
     }

@@ -3,8 +3,8 @@ package com.jerry.pilipala.interfaces.web;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
-import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl2;
-import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl2;
+import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl;
+import com.jerry.pilipala.domain.vod.service.impl.VodServiceImpl;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.config.Qiniu;
@@ -29,8 +29,8 @@ public class FileController {
     private final Qiniu qiniu;
     private final HttpServletResponse response;
 
-    public FileController(FileServiceImpl2 fileService,
-                          VodServiceImpl2 vodService,
+    public FileController(FileServiceImpl fileService,
+                          VodServiceImpl vodService,
                           Qiniu qiniu, HttpServletResponse response) {
         this.fileService = fileService;
         this.vodService = vodService;
