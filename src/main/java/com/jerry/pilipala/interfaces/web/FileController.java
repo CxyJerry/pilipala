@@ -1,6 +1,7 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.jerry.pilipala.application.vo.vod.UploadVO;
 import com.jerry.pilipala.domain.vod.service.FileService;
 import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.domain.vod.service.impl.FileServiceImpl;
@@ -41,28 +42,32 @@ public class FileController {
     /**
      * 正式上传文件
      *
-     * @param video 视频文件
-     * @param cid   预上传生产的稿件id
+     * @param cid 预上传生产的稿件id
      * @return success
      */
     @ApiOperation("上传视频文件")
     @SaCheckPermission("post-vod")
     @RateLimiter(key = "vod-limit:upload", count = 3, message = "上传速度过快，请稍后再试试吧", limitType = LimitType.IP)
-    @PostMapping("/upload")
-    public CommonResponse<?> upload(@RequestParam("video") @NotNull(message = "请选择视频文件") MultipartFile video,
-                                    @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
-        fileService.uploadVideo(video, cid);
-        return CommonResponse.success();
+    @GetMapping("/upload")
+    public CommonResponse<?> upload(@RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
+        UploadVO uploadVO = fileService.uploadVideo(cid);
+        return CommonResponse.success(uploadVO);
     }
 
-    @ApiOperation("分片上传视频")
-    @SaCheckPermission("post-vod")
-    @PostMapping("/upload-chunk")
-    public CommonResponse<?> uploadChunk(@RequestParam("chunk") @NotNull(message = "视频内容不得为空") MultipartFile video,
-                                         @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
-        fileService.uploadVideo(video, cid);
-        return CommonResponse.success();
+    @ApiOperation("上传视频完成")
+    @RequestMapping(method = RequestMethod.HEAD, value = "/upload/completed")
+    public void uploadCompleted(@RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
+        fileService.uploadCompleted(cid);
     }
+
+//    @ApiOperation("分片上传视频")
+//    @SaCheckPermission("post-vod")
+//    @PostMapping("/upload-chunk")
+//    public CommonResponse<?> uploadChunk(@RequestParam("chunk") @NotNull(message = "视频内容不得为空") MultipartFile video,
+//                                         @RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
+//        fileService.uploadVideo(video, cid);
+//        return CommonResponse.success();
+//    }
 
     /**
      * 上传封面

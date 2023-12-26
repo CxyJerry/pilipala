@@ -1,5 +1,6 @@
 package com.jerry.pilipala.domain.vod.service;
 
+import com.jerry.pilipala.application.vo.vod.UploadVO;
 import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,9 @@ public interface FileService {
     /**
      * 上传视频
      *
-     * @param file 视频文件
-     * @param cid  稿件ID
+     * @param cid 稿件ID
      */
-    void uploadVideo(MultipartFile file, Long cid);
+    UploadVO uploadVideo(Long cid);
 
     /**
      * 解析后缀名
@@ -53,6 +53,7 @@ public interface FileService {
     void deleteDirOfWorkSpace(String dirPath);
 
     ResponseEntity<InputStreamResource> video(String name, Quality quality);
+
     /**
      * 下载文件
      *
@@ -60,4 +61,7 @@ public interface FileService {
      * @return
      */
     ResponseEntity<InputStreamResource> cover(String filename);
+
+    void uploadCompleted(Long cid);
+
 }
