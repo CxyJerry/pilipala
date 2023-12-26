@@ -450,6 +450,9 @@ public class VodServiceImpl implements VodService {
      * @param ext      转码后文件拓展名
      */
     private void distribute(Long cid, String filename, String saveTo, Qn qn, String ext) {
+        String saveToDir = fileService.generateTranscodeResSaveToPath(saveTo);
+        fileService.uploadDirToOss(saveToDir);
+        fileService.deleteDirOfWorkSpace(saveToDir);
         Query queryDistributeInfo = new Query(Criteria.where("_id").is(cid));
 
         Update update = new Update()
