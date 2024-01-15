@@ -10,4 +10,5 @@ import lombok.experimental.Accessors;
 public class UserVO extends PreviewUserVO {
     private int fansCount = 0;
     private int followCount = 0;
+    private String announcement;
 }

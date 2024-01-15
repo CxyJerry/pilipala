@@ -20,6 +20,7 @@ public class User {
     private String intro = "";
     private String avatar = "/file/cover/nav_icon_avatar_nor.svg";
     private String roleId = "";
+    private String announcement = "";
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 

@@ -6,6 +6,7 @@ import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
+import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.SmsService;
 import com.jerry.pilipala.domain.user.entity.mongo.Role;
@@ -13,20 +14,28 @@ import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.user.service.UserService;
+import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
+import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
 import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.UserCacheKeyEnum;
+import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.CaptchaUtil;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,6 +44,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
     private final RedisTemplate<String, Object> redisTemplate;
@@ -44,6 +54,7 @@ public class UserServiceImpl implements UserService {
     private final HttpServletRequest request;
     private final JsonHelper jsonHelper;
     private final MessageTrigger messageTrigger;
+    private final VodService vodService;
 
 
     public UserServiceImpl(RedisTemplate<String, Object> redisTemplate,
@@ -51,7 +62,8 @@ public class UserServiceImpl implements UserService {
                            SmsService smsService,
                            UserEntityRepository userEntityRepository,
                            HttpServletRequest request, JsonHelper jsonHelper,
-                           MessageTrigger messageTrigger) {
+                           MessageTrigger messageTrigger,
+                           VodService vodService) {
         this.redisTemplate = redisTemplate;
         this.mongoTemplate = mongoTemplate;
         this.smsService = smsService;
@@ -59,6 +71,7 @@ public class UserServiceImpl implements UserService {
         this.request = request;
         this.jsonHelper = jsonHelper;
         this.messageTrigger = messageTrigger;
+        this.vodService = vodService;
     }
 
     @Override
@@ -106,7 +119,7 @@ public class UserServiceImpl implements UserService {
         // 推送站内信
         Map<String, String> variables = new HashMap<>();
         variables.put("user_name", user.getNickname());
-        variables.put("time", DateUtil.format(LocalDateTime.now(),"yyyy-mm-dd hh:MM:ss"));
+        variables.put("time", DateUtil.format(LocalDateTime.now(), "yyyy-mm-dd hh:MM:ss"));
         variables.put("ip", RequestUtil.getIpAddress(request));
         variables.put("user_id", user.getUid().toString());
         messageTrigger.triggerSystemMessage(
@@ -208,12 +221,12 @@ public class UserServiceImpl implements UserService {
         }
 
         int fansCount = userEntityRepository.countFollowersByUserId(uid);
-
         int upCount = userEntityRepository.getFollowedUsersCount(uid);
 
         userVO = new UserVO();
         userVO.setFansCount(fansCount)
                 .setFollowCount(upCount)
+                .setAnnouncement(user.getAnnouncement())
                 .setUid(user.getUid().toString())
                 .setAvatar(user.getAvatar())
                 .setNickName(user.getNickname());
@@ -260,5 +273,96 @@ public class UserServiceImpl implements UserService {
                 .setPageSize(pageSize)
                 .setTotal(total)
                 .setPage(userVOList);
+    }
+
+    @Override
+    public List<VodVO> collections(String uid, String setKey, Integer offset, Integer size) {
+        if (StringUtils.isBlank(uid)) {
+            uid = (String) StpUtil.getLoginId();
+        }
+        setKey = setKey.concat(uid);
+        Long collectCount = redisTemplate.opsForZSet().size(setKey);
+        if (Objects.isNull(collectCount)) {
+            collectCount = 0L;
+        }
+        Set<Long> cidSet = Objects.requireNonNull(
+                        redisTemplate.opsForZSet()
+                                .reverseRange(setKey, offset, Math.min(offset + size, collectCount))
+                )
+                .stream()
+                .filter(Objects::nonNull)
+                .map(e -> Long.parseLong(e.toString()))
+                .collect(Collectors.toSet());
+
+
+        String finalSetKey = setKey;
+
+        // 组装 视频稿件
+        List<VodInfo> vodInfoList = mongoTemplate.find(
+                new Query(Criteria.where("_id").in(cidSet)),
+                VodInfo.class
+        );
+        return vodService.batchBuildVodVOWithoutQuality(vodInfoList, true);
+    }
+
+    private Map<Long, Long> getInteractiveTimes(String setKey, String uid, List<VodVO> vodVOList) {
+        Map<Long, Long> timeMap = new HashMap<>();
+        setKey = setKey.concat(uid);
+        String finalSetKey = setKey;
+//        redisTemplate.executePipelined(new SessionCallback<>() {
+//            @Override
+//            public <K, V> Object execute(RedisOperations<K, V> operations) throws DataAccessException {
+//                ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
+//                vodVOList.forEach(vod -> {
+//                            Double score = zSetOperations.score(finalSetKey, vod.getCid().toString());
+//                            if (Objects.isNull(score)) {
+//                                return;
+//                            }
+//                            timeMap.put(vod.getCid(), score.longValue());
+//                        }
+//                );
+//                return null;
+//            }
+//        });
+        vodVOList.forEach(vod -> {
+                    Double score = redisTemplate.opsForZSet().score(finalSetKey, vod.getCid().toString());
+                    if (Objects.isNull(score)) {
+                        return;
+                    }
+                    timeMap.put(vod.getCid(), score.longValue());
+                }
+        );
+        return timeMap;
+    }
+
+    @Override
+    public void appendCollectTime(String uid, List<VodVO> vodVOList) {
+        Map<Long, Long> interactiveTimes = getInteractiveTimes(VodCacheKeyEnum.SetKey.COLLECT_SET, uid, vodVOList);
+        vodVOList.forEach(vod -> vod.setCollectTime(interactiveTimes.getOrDefault(vod.getCid(), 0L)));
+    }
+
+    @Override
+    public void appendCoinTime(String uid, List<VodVO> vodVOList) {
+        Map<Long, Long> interactiveTimes = getInteractiveTimes(VodCacheKeyEnum.SetKey.COIN_SET, uid, vodVOList);
+        vodVOList.forEach(vod -> vod.setCoinTime(interactiveTimes.getOrDefault(vod.getCid(), 0L)));
+    }
+
+    @Override
+    public void appendLikeTime(String uid, List<VodVO> vodVOList) {
+        Map<Long, Long> interactiveTimes = getInteractiveTimes(VodCacheKeyEnum.SetKey.LIKE_SET, uid, vodVOList);
+        vodVOList.forEach(vod -> vod.setLikeTime(interactiveTimes.getOrDefault(vod.getCid(), 0L)));
+    }
+
+    @Override
+    public String announcement(String announcement) {
+        String uid = (String) StpUtil.getLoginId();
+        User user = mongoTemplate.findById(uid, User.class);
+        if (Objects.isNull(user)) {
+            log.error("uid：{} 不存在", uid);
+            throw BusinessException.businessError("用户不存在");
+        }
+        user.setAnnouncement(announcement);
+        mongoTemplate.save(user);
+        return announcement;
     }
 }

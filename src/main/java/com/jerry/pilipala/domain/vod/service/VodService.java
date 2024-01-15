@@ -114,8 +114,9 @@ public interface VodService {
 
     Page<VodVO> reviewPage(Integer pageNo, Integer pageSize, String status);
 
-
     InteractionInfoVO interactionInfo(Long cid);
 
     BVodVO sdVideo(Long cid);
+
+    List<VodVO> batchBuildVodVOWithoutQuality(List<VodInfo> vodInfos, boolean needStatistics);
 }

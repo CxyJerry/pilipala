@@ -28,6 +28,12 @@ public class VodVO {
     private Integer coinCount = 0;
     private Integer collectCount = 0;
     private Integer shareCount = 0;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long likeTime = 0L;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long coinTime = 0L;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long collectTime = 0L;
     private List<QualityVO> quality;
     private Long onlineCount;
     @JsonFormat(shape = JsonFormat.Shape.STRING)

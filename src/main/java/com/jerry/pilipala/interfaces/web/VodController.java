@@ -153,7 +153,14 @@ public class VodController {
      */
     @ApiOperation("获取自己投递的稿件")
     @GetMapping("/content/page")
-    public CommonResponse<?> page(@RequestParam(value = "uid", required = false) String uid, @RequestParam(value = "page_no", defaultValue = "1") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageNo, @RequestParam(value = "page_size", defaultValue = "10") @Min(value = 1, message = "最小1") @Max(value = 1000, message = "最大1000") Integer pageSize, @RequestParam(value = "status", defaultValue = "") String status) {
+    public CommonResponse<?> page(@RequestParam(value = "uid", required = false) String uid,
+                                  @RequestParam(value = "page_no", defaultValue = "1")
+                                  @Min(value = 1, message = "最小1")
+                                  @Max(value = 1000, message = "最大1000") Integer pageNo,
+                                  @RequestParam(value = "page_size", defaultValue = "10")
+                                  @Min(value = 1, message = "最小1")
+                                  @Max(value = 1000, message = "最大1000") Integer pageSize,
+                                  @RequestParam(value = "status", defaultValue = "") String status) {
         Page<VodVO> page = vodService.page(uid, pageNo, pageSize, status);
         return CommonResponse.success(page);
     }

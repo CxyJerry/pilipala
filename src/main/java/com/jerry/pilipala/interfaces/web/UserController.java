@@ -4,10 +4,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
+import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
+import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.validation.annotation.Validated;
@@ -17,13 +19,13 @@ import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 @Validated
 @RestController
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
-
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -124,5 +126,75 @@ public class UserController {
         Page<UserVO> page = userService.page(pageNo, pageSize);
         return CommonResponse.success(page);
     }
+
+    /**
+     * 获取最近收藏
+     *
+     * @param uid    被获取的用户的ID
+     * @param offset 集合偏移量
+     * @param size   获取数量
+     * @return list
+     */
+    @ApiOperation("获取最近收藏")
+    @GetMapping("/collections")
+    public CommonResponse<?> collections(@RequestParam(value = "uid", required = false) String uid,
+                                         @RequestParam("offset") Integer offset,
+                                         @RequestParam("size") Integer size) {
+        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.COLLECT_SET, offset, size);
+        userService.appendCollectTime(uid, vodList);
+        return CommonResponse.success(vodList);
+    }
+
+    /**
+     * 获取最近投币
+     *
+     * @param uid    被获取的用户ID
+     * @param offset 数据偏移量
+     * @param size   获取量
+     * @return list
+     */
+    @ApiOperation(("获取最近投币"))
+    @GetMapping("/coins")
+    public CommonResponse<?> coins(@RequestParam(value = "uid", required = false) String uid,
+                                   @RequestParam("offset") Integer offset,
+                                   @RequestParam("size") Integer size) {
+        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.COIN_SET, offset, size);
+        userService.appendCoinTime(uid, vodList);
+        return CommonResponse.success(vodList);
+    }
+
+    /**
+     * 获取最近点赞
+     *
+     * @param uid    被获取的用户ID
+     * @param offset 数据偏移量
+     * @param size   获取量
+     * @return list
+     */
+    @ApiOperation(("获取最近点赞"))
+    @GetMapping("/likes")
+    public CommonResponse<?> likes(@RequestParam(value = "uid", required = false) String uid,
+                                   @RequestParam("offset") Integer offset,
+                                   @RequestParam("size") Integer size) {
+        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.LIKE_SET, offset, size);
+        userService.appendLikeTime(uid, vodList);
+        return CommonResponse.success(vodList);
+    }
+
+    /**
+     * 修改个人公告
+     *
+     * @param announcement 新公告内容
+     * @return 修改后的公告内容
+     */
+    @ApiOperation("修改个人公告")
+    @PutMapping("/announcement")
+    public CommonResponse<?> announcement(String announcement) {
+        String announcement_content = userService.announcement(announcement);
+        return CommonResponse.success(announcement_content);
+    }
+
+//    @ApiOperation("修改个人信息")
+
 
 }

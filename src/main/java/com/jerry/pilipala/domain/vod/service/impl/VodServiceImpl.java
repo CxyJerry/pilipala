@@ -662,11 +662,12 @@ public class VodServiceImpl implements VodService {
         List<VodVO> vodVOList = batchBuildVodVOWithoutQuality(vodInfoList, true);
 
         Query totalQuery = new Query(criteria);
-        long count = mongoTemplate.count(totalQuery, BVod.class);
+        long count = mongoTemplate.count(totalQuery, VodInfo.class);
 
         return page.setTotal(count).setPage(vodVOList);
     }
 
+    @Override
     public List<VodVO> batchBuildVodVOWithoutQuality(List<VodInfo> vodInfos, boolean needStatistics) {
         // 整理出所有的 cid
         Collection<Object> cidSet = vodInfos.stream()
@@ -1052,9 +1053,9 @@ public class VodServiceImpl implements VodService {
         String collectKey = VodCacheKeyEnum.SetKey.COLLECT_SET.concat(uid);
 
         return new InteractionInfoVO()
-                .setLiked(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(likeKey, cid.toString())))
-                .setCoined(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(coinKey, cid.toString())))
-                .setCollected(Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(collectKey, cid.toString())));
+                .setLiked(Objects.nonNull(redisTemplate.opsForZSet().score(likeKey, cid.toString())))
+                .setCoined(Objects.nonNull(redisTemplate.opsForZSet().score(coinKey, cid.toString())))
+                .setCollected(Objects.nonNull(redisTemplate.opsForZSet().score(collectKey, cid.toString())));
     }
 
 

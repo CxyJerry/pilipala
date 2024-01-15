@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class CollectInteractiveActionHandler extends InteractiveActionHandler {
@@ -23,11 +24,11 @@ public class CollectInteractiveActionHandler extends InteractiveActionHandler {
         String cid = params.get("cid").toString();
         // 是取消收藏事件，点赞数 - 1，set 移除 uid
         String uid = interactiveAction.getUid();
-        String likeSetKey = VodCacheKeyEnum.SetKey.COLLECT_SET.concat(String.valueOf(uid));
-        if (Boolean.TRUE.equals(redisTemplate.opsForSet()
-                .isMember(likeSetKey, cid))) {
-            redisTemplate.opsForSet().remove(
-                    likeSetKey,
+        String collectSet = VodCacheKeyEnum.SetKey.COLLECT_SET.concat(String.valueOf(uid));
+
+        if (Objects.nonNull(redisTemplate.opsForZSet().score(collectSet, cid))) {
+            redisTemplate.opsForZSet().remove(
+                    collectSet,
                     cid
             );
             checkVodStatisticsExists(cid);
@@ -35,10 +36,7 @@ public class CollectInteractiveActionHandler extends InteractiveActionHandler {
         }
         // 如果是收藏事件，收藏数 +1，uid 放入 set
         else {
-            redisTemplate.opsForSet().add(
-                    likeSetKey,
-                    cid
-            );
+            redisTemplate.opsForZSet().add(collectSet, cid, System.currentTimeMillis());
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "collectCount", true);
         }

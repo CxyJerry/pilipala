@@ -42,8 +42,7 @@ public class LikeInteractiveActionHandler extends InteractiveActionHandler {
         // 是取消点赞事件，点赞数 - 1，set 移除 uid
         String uid = interactiveAction.getUid();
         String likeSetKey = VodCacheKeyEnum.SetKey.LIKE_SET.concat(String.valueOf(uid));
-        if (Boolean.TRUE.equals(redisTemplate.opsForSet()
-                .isMember(likeSetKey, cid))) {
+        if (Objects.nonNull(redisTemplate.opsForZSet().score(likeSetKey, cid))) {
             redisTemplate.opsForSet().remove(
                     likeSetKey,
                     cid
@@ -53,9 +52,10 @@ public class LikeInteractiveActionHandler extends InteractiveActionHandler {
         }
         // 如果是点赞事件，点赞数 +1，uid 放入 set
         else {
-            redisTemplate.opsForSet().add(
+            redisTemplate.opsForZSet().add(
                     likeSetKey,
-                    cid
+                    cid,
+                    System.currentTimeMillis()
             );
             checkVodStatisticsExists(cid);
             incVodStatistics(cid, "likeCount", true);
