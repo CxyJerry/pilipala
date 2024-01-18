@@ -2,6 +2,7 @@ package com.jerry.pilipala.domain.user.service;
 
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
+import com.jerry.pilipala.application.dto.UserUpdateDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.infrastructure.utils.Page;
@@ -33,4 +34,6 @@ public interface UserService {
     void appendLikeTime(String uid, List<VodVO> vodVOList);
 
     String announcement(String announcement);
+
+    UserVO updateUserInfo(UserUpdateDTO userUpdateDTO);
 }

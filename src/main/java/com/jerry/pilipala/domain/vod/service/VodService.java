@@ -13,6 +13,7 @@ import com.jerry.pilipala.domain.vod.entity.mongo.thumbnails.VodThumbnails;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Vod;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
+import com.jerry.pilipala.infrastructure.enums.VodOrderByEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
@@ -98,7 +99,7 @@ public interface VodService {
 
     void review(Long cid, String status);
 
-    Page<VodVO> page(String uid, Integer pageNo, Integer pageSize, String type);
+    Page<VodVO> page(String uid, Integer pageNo, Integer pageSize, String type, VodOrderByEnum orderBy);
 
     BVodVO videos(String bvid, Long cid);
 

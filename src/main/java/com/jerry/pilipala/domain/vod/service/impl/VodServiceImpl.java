@@ -14,6 +14,7 @@ import com.jerry.pilipala.application.vo.user.PreviewUserVO;
 import com.jerry.pilipala.application.vo.vod.*;
 import com.jerry.pilipala.domain.common.template.MessageTrigger;
 import com.jerry.pilipala.domain.message.service.MessageService;
+import com.jerry.pilipala.domain.user.entity.mongo.Dynamic;
 import com.jerry.pilipala.domain.user.entity.mongo.Permission;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
@@ -38,10 +39,7 @@ import com.jerry.pilipala.domain.vod.service.media.encoder.Encoder;
 import com.jerry.pilipala.domain.vod.service.media.profiles.Profile;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.infrastructure.enums.ActionStatusEnum;
-import com.jerry.pilipala.infrastructure.enums.Qn;
-import com.jerry.pilipala.infrastructure.enums.VodHandleActionEnum;
-import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
+import com.jerry.pilipala.infrastructure.enums.*;
 import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.enums.video.Resolution;
@@ -64,6 +62,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -278,10 +277,9 @@ public class VodServiceImpl implements VodService {
      * @param cid 稿件唯一ID
      * @param vod 稿件素材信息
      * @return 视频规格列表
-     * @throws JsonProcessingException 打印视频规格信息时可能产生的序列化异常
      */
     @Override
-    public List<Profile> schema(Long cid, Vod vod) throws JsonProcessingException {
+    public List<Profile> schema(Long cid, Vod vod) {
         Query query = new Query(Criteria.where("_id").is(cid));
         VodProfiles vodProfiles = mongoTemplate.findOne(query, VodProfiles.class);
         List<Profile> profiles;
@@ -588,6 +586,17 @@ public class VodServiceImpl implements VodService {
             return;
         }
 
+        // 推送动态消息
+        try {
+            CompletableFuture.runAsync(() -> {
+                Dynamic dynamic = new Dynamic()
+                        .setUid(vodInfo.getUid())
+                        .setCid(vodInfo.getCid());
+                mongoTemplate.save(dynamic);
+            }).get();
+        } catch (Exception e) {
+            log.warn("稿件动态消息推送失败：{}", vodInfo.getCid());
+        }
 
         UserEntity userEntity = userEntityRepository.findById(author.getUid().toString()).orElse(null);
         if (Objects.isNull(userEntity)) {
@@ -633,8 +642,15 @@ public class VodServiceImpl implements VodService {
         );
     }
 
+
     @Override
-    public Page<VodVO> page(String uid, Integer pageNo, Integer pageSize, String status) {
+    public Page<VodVO> page(
+            String uid,
+            Integer pageNo,
+            Integer pageSize,
+            String status,
+            VodOrderByEnum orderBy
+    ) {
         Page<VodVO> page = new Page<VodVO>().setPageNo(pageNo).setPageSize(pageSize);
         if (StringUtils.isBlank(uid)) {
             uid = (String) StpUtil.getLoginId();
@@ -648,12 +664,34 @@ public class VodServiceImpl implements VodService {
             criteria.and("status").is(vodStatus);
         }
 
+        MatchOperation matchOperation = Aggregation.match(criteria);
+        String orderByField = "ctime";
+        if (Objects.nonNull(orderBy)) {
+            orderByField = orderBy.getFieldName();
+        }
+        LookupOperation lookupOperation = LookupOperation.newLookup()
+                .from("vod_statistics")
+                .localField("_id")
+                .foreignField("cid")
+                .as("cid");
+
+        SortOperation sortOperation = Aggregation.sort(Sort.Direction.DESC, orderByField);
+        SkipOperation skipOperation = Aggregation.skip((long) pageNo * pageSize);
+        LimitOperation limitOperation = Aggregation.limit(pageSize);
+
+        Aggregation aggregation = Aggregation.newAggregation(
+                matchOperation,
+                lookupOperation,
+                sortOperation,
+                skipOperation,
+                limitOperation
+        );
+
         // 查询出所有可播放的 bvod
-        Query pageQuery = new Query(criteria)
-                .with(Sort.by(Sort.Order.asc("ctime")))
-                .skip((long) pageNo * pageSize)
-                .limit(pageSize);
-        List<VodInfo> vodInfoList = mongoTemplate.find(pageQuery, VodInfo.class);
+        List<VodInfo> vodInfoList = mongoTemplate
+                .aggregate(aggregation, "vod_info", VodInfo.class)
+                .getMappedResults();
+
         if (CollectionUtil.isEmpty(vodInfoList)) {
             return page.setTotal(0L).setPage(new ArrayList<>());
         }

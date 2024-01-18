@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
+import com.jerry.pilipala.application.dto.UserUpdateDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.common.template.MessageTrigger;
@@ -28,14 +29,10 @@ import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.SessionCallback;
-import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -227,6 +224,7 @@ public class UserServiceImpl implements UserService {
         userVO.setFansCount(fansCount)
                 .setFollowCount(upCount)
                 .setAnnouncement(user.getAnnouncement())
+                .setIntro(user.getIntro())
                 .setUid(user.getUid().toString())
                 .setAvatar(user.getAvatar())
                 .setNickName(user.getNickname());
@@ -309,21 +307,6 @@ public class UserServiceImpl implements UserService {
         Map<Long, Long> timeMap = new HashMap<>();
         setKey = setKey.concat(uid);
         String finalSetKey = setKey;
-//        redisTemplate.executePipelined(new SessionCallback<>() {
-//            @Override
-//            public <K, V> Object execute(RedisOperations<K, V> operations) throws DataAccessException {
-//                ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
-//                vodVOList.forEach(vod -> {
-//                            Double score = zSetOperations.score(finalSetKey, vod.getCid().toString());
-//                            if (Objects.isNull(score)) {
-//                                return;
-//                            }
-//                            timeMap.put(vod.getCid(), score.longValue());
-//                        }
-//                );
-//                return null;
-//            }
-//        });
         vodVOList.forEach(vod -> {
                     Double score = redisTemplate.opsForZSet().score(finalSetKey, vod.getCid().toString());
                     if (Objects.isNull(score)) {
@@ -364,5 +347,22 @@ public class UserServiceImpl implements UserService {
         user.setAnnouncement(announcement);
         mongoTemplate.save(user);
         return announcement;
+    }
+
+    @Override
+    public UserVO updateUserInfo(UserUpdateDTO userUpdateDTO) {
+        String uid = (String) StpUtil.getLoginId();
+        User user = mongoTemplate.findById(uid, User.class);
+        if (Objects.isNull(user)) {
+            log.error("用户不存在，uid: {}", uid);
+            throw BusinessException.businessError("用户信息异常");
+        }
+        user.setNickname(userUpdateDTO.getNickName())
+                .setIntro(userUpdateDTO.getIntro())
+                .setAvatar(userUpdateDTO.getAvatar())
+                .setAnnouncement(userUpdateDTO.getAnnouncement());
+        mongoTemplate.save(user);
+
+        return userVO(uid, true);
     }
 }

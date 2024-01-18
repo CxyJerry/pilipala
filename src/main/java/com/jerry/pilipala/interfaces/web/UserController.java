@@ -3,6 +3,7 @@ package com.jerry.pilipala.interfaces.web;
 import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
+import com.jerry.pilipala.application.dto.UserUpdateDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.user.service.UserService;
@@ -194,7 +195,17 @@ public class UserController {
         return CommonResponse.success(announcement_content);
     }
 
-//    @ApiOperation("修改个人信息")
-
+    /**
+     * 修改用户个人信息
+     *
+     * @param userUpdateDTO 更新实体数据
+     * @return 用户视图模型
+     */
+    @ApiOperation("修改个人信息")
+    @PutMapping("/update")
+    public CommonResponse<?> update(@RequestBody UserUpdateDTO userUpdateDTO) {
+        UserVO userVO = userService.updateUserInfo(userUpdateDTO);
+        return CommonResponse.success(userVO);
+    }
 
 }
