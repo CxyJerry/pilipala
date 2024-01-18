@@ -2,6 +2,7 @@ package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.stp.StpUtil;
 import com.google.common.collect.Maps;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
@@ -17,6 +18,7 @@ import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
+import com.jerry.pilipala.infrastructure.enums.VodOrderByEnum;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import io.swagger.annotations.ApiOperation;
@@ -77,6 +79,12 @@ public class VodController {
         }
         HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
         params.put("cid", cid);
+        Object uid = StpUtil.getLoginId();
+        if (Objects.nonNull(uid)) {
+            params.put("uid", uid);
+        }
+        String authorUid = videos.getAuthor().getUid();
+        params.put("vod_author_uid", authorUid);
         // 新增互动数据
         VodInteractiveAction playAction;
         try {
@@ -160,8 +168,10 @@ public class VodController {
                                   @RequestParam(value = "page_size", defaultValue = "10")
                                   @Min(value = 1, message = "最小1")
                                   @Max(value = 1000, message = "最大1000") Integer pageSize,
-                                  @RequestParam(value = "status", defaultValue = "") String status) {
-        Page<VodVO> page = vodService.page(uid, pageNo, pageSize, status);
+                                  @RequestParam(value = "status", defaultValue = "") String status,
+                                  @RequestParam(required = false, value = "order_by") String orderByName) {
+        VodOrderByEnum orderBy = VodOrderByEnum.parse(orderByName);
+        Page<VodVO> page = vodService.page(uid, pageNo, pageSize, status, orderBy);
         return CommonResponse.success(page);
     }
 
