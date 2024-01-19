@@ -79,7 +79,7 @@ public class VodController {
         }
         HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
         params.put("cid", cid);
-        Object uid = StpUtil.getLoginId();
+        Object uid = StpUtil.getLoginId("");
         if (Objects.nonNull(uid)) {
             params.put("uid", uid);
         }
