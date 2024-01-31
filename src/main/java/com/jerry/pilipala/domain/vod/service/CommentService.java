@@ -5,7 +5,9 @@ import com.jerry.pilipala.application.vo.vod.CommentVO;
 import com.jerry.pilipala.infrastructure.utils.Page;
 
 public interface CommentService {
-    CommentVO post(CommentDTO commentDTO);
+    void post(String uid, CommentDTO commentDTO);
 
     Page<CommentVO> get(String cid, String parentCommentId, Integer pageNo, Integer pageSize);
+
+    void delete(String uid, Long cid, String commentId);
 }

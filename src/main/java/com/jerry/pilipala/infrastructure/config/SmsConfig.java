@@ -1,12 +1,11 @@
 package com.jerry.pilipala.infrastructure.config;
 
 import com.apistd.uni.Uni;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-
-import javax.annotation.PostConstruct;
 
 @Data
 @Slf4j

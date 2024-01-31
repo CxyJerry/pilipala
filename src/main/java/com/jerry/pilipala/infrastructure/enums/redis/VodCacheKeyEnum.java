@@ -17,6 +17,7 @@ public interface VodCacheKeyEnum {
         String COIN_SET = "coin-set-";
         String COLLECT_SET = "collect-set-";
         String OFTEN_INTERACTIVE_SET = "often_interactive-";
+        String ONLINE = "online-";
     }
 
     interface StreamKey {

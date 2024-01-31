@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface DanmakuService {
 
-    DanmakuValueVO send(DanmakuDTO danmaku);
+    void send(String uid, DanmakuDTO danmaku);
 
-    List<DanmakuValueVO> danmakus(Long cid,Integer max);
+    List<DanmakuValueVO> danmakus(Long cid, Integer max);
 
 }

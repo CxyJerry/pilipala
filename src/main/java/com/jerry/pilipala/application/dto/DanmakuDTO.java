@@ -1,17 +1,15 @@
 package com.jerry.pilipala.application.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+
 
 @Data
 @Accessors(chain = true)
 public class DanmakuDTO {
-    // 用户ID
-    @NotBlank(message = "弹幕作者不得为空")
-    private String author;
     @NotNull(message = "弹幕颜色不得为空")
     private Integer color;
     // 稿件ID

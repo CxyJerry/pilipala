@@ -105,11 +105,11 @@ public interface VodService {
 
     Map<Long, VodStatistics> batchQueryVodStatistics(Collection<Object> cidCollection);
 
-    void updatePlayTime(String bvId, Long cid, Integer time);
+    void updatePlayTime(String uid, String bvId, Long cid, Integer time);
 
 
-    public List<PreviewBVodVO> buildPreviewBVodList(List<VodInfo> vodInfoList);
-
+     List<PreviewBVodVO> buildPreviewBVodList(List<VodInfo> vodInfoList);
+    List<VodVO> collections(String uid, String setKey, Integer offset, Integer size);
 
     VodThumbnails thumbnails(Long cid);
 

@@ -1,9 +1,9 @@
 package com.jerry.pilipala.application.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import javax.validation.constraints.NotBlank;
 
 @Data
 @Accessors(chain = true)

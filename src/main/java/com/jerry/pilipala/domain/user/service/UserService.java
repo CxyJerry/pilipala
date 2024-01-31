@@ -25,7 +25,7 @@ public interface UserService {
 
     UserVO emailLogin(EmailLoginDTO loginDTO);
 
-    List<VodVO> collections(String uid, String setKey, Integer offset, Integer size);
+
 
     void appendCollectTime(String uid, List<VodVO> vodVOList);
 
@@ -36,4 +36,6 @@ public interface UserService {
     String announcement(String announcement);
 
     UserVO updateUserInfo(UserUpdateDTO userUpdateDTO);
+
+    List<String> getPermissionIds(String uid);
 }

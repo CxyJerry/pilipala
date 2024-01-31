@@ -1,48 +1,35 @@
 package com.jerry.pilipala.domain.vod.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.DanmakuDTO;
 import com.jerry.pilipala.application.vo.vod.DanmakuValueVO;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
-import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.Danmaku;
 import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.domain.vod.service.DanmakuSseManager;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
-import com.jerry.pilipala.infrastructure.utils.RequestUtil;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 public class DanmakuServiceImpl implements DanmakuService {
-
     private final MongoTemplate mongoTemplate;
-    private final HttpServletRequest request;
-    private final UserEntityRepository userEntityRepository;
-
     private final DanmakuSseManager danmakuSseManager;
 
     public DanmakuServiceImpl(MongoTemplate mongoTemplate,
-                              HttpServletRequest request,
-                              UserEntityRepository userEntityRepository,
                               DanmakuSseManager danmakuSseManager) {
         this.mongoTemplate = mongoTemplate;
-        this.request = request;
-        this.userEntityRepository = userEntityRepository;
         this.danmakuSseManager = danmakuSseManager;
     }
 
     @Override
-    public DanmakuValueVO send(DanmakuDTO danmakuDto) {
-        String uid = (String) StpUtil.getLoginId();
+    public void send(String uid, DanmakuDTO danmakuDto) {
         User sender = mongoTemplate.findById(new ObjectId(uid), User.class);
 
         if (Objects.isNull(sender)) {
@@ -54,8 +41,7 @@ public class DanmakuServiceImpl implements DanmakuService {
                 .setSender(sender.getNickname())
                 .setTime(danmakuDto.getTime())
                 .setText(danmakuDto.getText())
-                .setColor(danmakuDto.getColor())
-                .setIp(RequestUtil.getIpAddress(request));
+                .setColor(danmakuDto.getColor());
         danmaku = mongoTemplate.save(danmaku);
 
         DanmakuValueVO danmakuValueVO = new DanmakuValueVO();
@@ -66,7 +52,6 @@ public class DanmakuServiceImpl implements DanmakuService {
                 .setText(danmaku.getText());
 
         danmakuSseManager.send(danmakuDto.getId(), danmakuValueVO);
-        return danmakuValueVO;
     }
 
     @Override

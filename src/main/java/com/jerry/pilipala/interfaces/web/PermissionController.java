@@ -10,14 +10,14 @@ import com.jerry.pilipala.application.vo.user.RoleVO;
 import com.jerry.pilipala.domain.user.service.PermissionService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Validated
@@ -39,7 +39,7 @@ public class PermissionController {
      * @param roleId  角色ID
      * @return success
      */
-    @ApiOperation("用户权限授予")
+    @Operation(summary = "用户权限授予")
     @SaCheckPermission("permission-manage")
     @PutMapping("/role/grant")
     public CommonResponse<?> grantRole(@RequestParam("apply_id") @NotBlank(message = "申请ID不得为空") String applyId,
@@ -56,7 +56,7 @@ public class PermissionController {
      * @param value 权限值
      * @return permission
      */
-    @ApiOperation("权限创建")
+    @Operation(summary = "权限创建")
     @SaCheckPermission("permission-manage")
     @PostMapping("/permission/create")
     public CommonResponse<?> createPermission(@RequestParam("name") @NotBlank(message = "权限名不得为空") String name,
@@ -71,7 +71,7 @@ public class PermissionController {
      * @param permissionId 权限ID
      * @return success
      */
-    @ApiOperation("删除权限")
+    @Operation(summary = "删除权限")
     @SaCheckPermission("permission-manage")
     @DeleteMapping("/permission/delete")
     public CommonResponse<?> deletePermission(@RequestParam("permission_id")
@@ -85,7 +85,7 @@ public class PermissionController {
      *
      * @return list
      */
-    @ApiOperation("权限列表")
+    @Operation(summary = "权限列表")
     @SaCheckPermission("permission-manage")
     @GetMapping("/permission/list")
     public CommonResponse<?> permissionList() {
@@ -98,7 +98,7 @@ public class PermissionController {
      *
      * @return list
      */
-    @ApiOperation("角色列表")
+    @Operation(summary = "角色列表")
     @SaCheckPermission("permission-manage")
     @GetMapping("/role/list")
     public CommonResponse<?> roleList() {
@@ -112,7 +112,7 @@ public class PermissionController {
      * @param roleSaveDTO dto
      * @return role
      */
-    @ApiOperation("角色创建")
+    @Operation(summary = "角色创建")
     @SaCheckPermission("permission-manage")
     @PutMapping("/role/save")
     public CommonResponse<?> saveRole(@RequestBody @Valid RoleSaveDTO roleSaveDTO) {
@@ -130,7 +130,7 @@ public class PermissionController {
      * @param roleId 角色ID
      * @return success
      */
-    @ApiOperation("角色删除")
+    @Operation(summary = "角色删除")
     @SaCheckPermission("permission-manage")
     @DeleteMapping("/role/delete")
     public CommonResponse<?> deleteRole(@RequestParam(value = "role_id")
@@ -144,7 +144,7 @@ public class PermissionController {
      *
      * @return success
      */
-    @ApiOperation("权限申请")
+    @Operation(summary = "权限申请")
     @SaCheckLogin
     @PostMapping("/permission/apply")
     public CommonResponse<?> permissionApply() {
@@ -160,7 +160,7 @@ public class PermissionController {
      * @param status   处理状态
      * @return page
      */
-    @ApiOperation("权限申请列表")
+    @Operation(summary = "权限申请列表")
     @SaCheckPermission("permission-manage")
     @GetMapping("/permission/apply/page")
     public CommonResponse<?> applyPage(@RequestParam("page_no")
@@ -181,7 +181,7 @@ public class PermissionController {
      * @param permissionId 权限ID(可选）
      * @return path
      */
-    @ApiOperation("访问路径创建")
+    @Operation(summary = "访问路径创建")
     @SaCheckPermission("permission-manage")
     @PutMapping("/path/save")
     public CommonResponse<?> savePath(@RequestParam("path") @NotBlank(message = "路径不得为空") String path,
@@ -195,7 +195,7 @@ public class PermissionController {
      *
      * @return list
      */
-    @ApiOperation("访问路径列表")
+    @Operation(summary = "访问路径列表")
     @SaCheckPermission("permission-manage")
     @GetMapping("/path/get")
     public CommonResponse<?> pathPage() {
@@ -209,7 +209,7 @@ public class PermissionController {
      * @param pathId 路径ID
      * @return success
      */
-    @ApiOperation("删除路径")
+    @Operation(summary = "删除路径")
     @SaCheckPermission("permission-manage")
     @DeleteMapping("/path/delete")
     public CommonResponse<?> deletePath(@RequestParam("path_id")
@@ -223,7 +223,7 @@ public class PermissionController {
      *
      * @return list
      */
-    @ApiOperation("可访问的路径列表")
+    @Operation(summary = "可访问的路径列表")
     @GetMapping("/path/accessible")
     public CommonResponse<?> accessiblePath() {
         List<String> paths = permissionService.accessiblePath();

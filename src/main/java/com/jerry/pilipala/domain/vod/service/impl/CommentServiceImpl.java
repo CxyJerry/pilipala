@@ -13,6 +13,7 @@ import com.jerry.pilipala.domain.vod.entity.mongo.vod.Comment;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
 import com.jerry.pilipala.domain.vod.service.CommentService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
+import com.jerry.pilipala.infrastructure.enums.VodStatusEnum;
 import com.jerry.pilipala.infrastructure.enums.message.MessageType;
 import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
@@ -23,6 +24,7 @@ import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -48,9 +50,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public CommentVO post(CommentDTO commentDTO) {
-        String uid = (String) StpUtil.getLoginId();
-
+    public void post(String uid, CommentDTO commentDTO) {
         // 查询作者信息
         User author = mongoTemplate.findById(new ObjectId(uid), User.class);
 
@@ -107,21 +107,6 @@ public class CommentServiceImpl implements CommentService {
 
         // 推送回复消息给评论作者
         triggerReplyMessage(comment, author, vodInfo, parentComment);
-
-        // 构建评论模型
-        CommentVO commentVO = new CommentVO();
-
-        PreviewUserVO authorPreviewVO = new PreviewUserVO().setUid(author.getUid().toString())
-                .setAvatar(author.getAvatar())
-                .setNickName(author.getNickname())
-                .setIntro(author.getIntro());
-
-        return commentVO.setId(comment.getId().toString())
-                .setCid(comment.getCid())
-                .setAuthor(authorPreviewVO)
-                .setContent(comment.getContent())
-                .setHasChild(false)
-                .setDate(comment.getCtime());
     }
 
     private String rebuildCommentContent(String content, Collection<ObjectId> userIdCollection, Map<ObjectId, User> userMap, Map<ObjectId, Pair<Integer, Integer>> userIdPairMap) {
@@ -341,5 +326,34 @@ public class CommentServiceImpl implements CommentService {
                 .setTotal(total)
                 .setPageNo(pageNo)
                 .setPageSize(pageSize);
+    }
+
+    @Override
+    public void delete(String uid, Long cid, String commentId) {
+        VodInfo vodInfo = mongoTemplate.findById(cid, VodInfo.class);
+        if (Objects.isNull(vodInfo) || !vodInfo.getStatus().equals(VodStatusEnum.PASSED)) {
+            throw BusinessException.businessError("稿件不存在/未开放");
+        }
+
+        Comment comment = mongoTemplate.findById(new ObjectId(commentId), Comment.class);
+        if (Objects.isNull(comment) || !comment.getDeleted()) {
+            throw BusinessException.businessError("评论不存在/已删除");
+        }
+        String vodAuthorId = vodInfo.getUid();
+        String commentAuthorId = comment.getUid();
+
+        // 如果不是稿件作者 / 评论作者，无权删除评论
+        if (!Objects.equals(vodAuthorId, uid) ||
+                !Objects.equals(commentAuthorId, uid)) {
+            throw BusinessException.businessError("您无权删除该评论");
+        }
+
+        Update update = new Update();
+        update.set("deleted", true);
+        mongoTemplate.updateFirst(
+                new Query(Criteria.where("_id").is(commentId)),
+                update,
+                Comment.class
+        );
     }
 }

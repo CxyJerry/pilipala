@@ -5,7 +5,6 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.PreUploadDTO;
 import com.jerry.pilipala.application.dto.VideoPostDTO;
 import com.jerry.pilipala.application.vo.bvod.BVodVO;
@@ -19,6 +18,7 @@ import com.jerry.pilipala.domain.user.entity.mongo.Permission;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
+import com.jerry.pilipala.domain.user.service.UserService;
 import com.jerry.pilipala.domain.vod.entity.mongo.distribute.Quality;
 import com.jerry.pilipala.domain.vod.entity.mongo.distribute.VodDistributeInfo;
 import com.jerry.pilipala.domain.vod.entity.mongo.event.VodHandleActionEvent;
@@ -72,10 +72,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -102,6 +100,7 @@ public class VodServiceImpl implements VodService {
     private final JsonHelper jsonHelper;
     private final FileService fileService;
     private final MessageTrigger messageTrigger;
+    private final UserService userService;
 
     public VodServiceImpl(MongoTemplate mongoTemplate,
                           RedisTemplate<String, Object> redisTemplate,
@@ -113,7 +112,8 @@ public class VodServiceImpl implements VodService {
                           MessageService messageService,
                           JsonHelper jsonHelper,
                           FileService fileService,
-                          MessageTrigger messageTrigger1) {
+                          MessageTrigger messageTrigger1,
+                          UserService userService) {
         this.mongoTemplate = mongoTemplate;
         this.redisTemplate = redisTemplate;
         this.applicationEventPublisher = applicationEventPublisher;
@@ -124,6 +124,7 @@ public class VodServiceImpl implements VodService {
         this.jsonHelper = jsonHelper;
         this.fileService = fileService;
         this.messageTrigger = messageTrigger1;
+        this.userService = userService;
     }
 
     {
@@ -511,8 +512,7 @@ public class VodServiceImpl implements VodService {
         }
         boolean needCheckPermission = false;
         if (StringUtils.isNotBlank(uid)) {
-            UserInfoBO userInfoBO = (UserInfoBO) StpUtil.getSession().get("user-info");
-            List<String> permissionIdList = userInfoBO.getPermissionIdList();
+            List<String> permissionIdList = userService.getPermissionIds(uid);
             Permission permission = mongoTemplate.findOne(new Query(Criteria.where("value").is("review-vod")),
                     Permission.class);
             if (Objects.isNull(permission) || !permissionIdList.contains(permission.getId().toString())) {
@@ -881,7 +881,9 @@ public class VodServiceImpl implements VodService {
                             .setShareCount(statics.getShareCount());
 
                     // 查询在线观看人数
-                    Long onlineCount = redisTemplate.opsForZSet().size("online-".concat(String.valueOf(vod.getCid())));
+                    Long onlineCount = redisTemplate
+                            .opsForSet()
+                            .size(VodCacheKeyEnum.SetKey.ONLINE.concat(String.valueOf(vod.getCid())));
                     if (Objects.isNull(onlineCount)) {
                         onlineCount = 0L;
                     }
@@ -963,21 +965,15 @@ public class VodServiceImpl implements VodService {
     }
 
     @Override
-    public void updatePlayTime(String bvId, Long cid, Integer time) {
-        String uid = StpUtil.getLoginId("");
-        if (StringUtils.isBlank(uid)) {
+    public void updatePlayTime(String uid, String bvId, Long cid, Integer time) {
+        if (StringUtils.isBlank(uid) || StringUtils.equalsIgnoreCase(uid, "unknown")) {
             return;
         }
-
         // 记录播放到的位置 -> 下次恢复播放
         redisTemplate.opsForHash().put(
                 VodCacheKeyEnum.HashKey.PLAY_OFFSET_CACHE_KEY.concat(uid),
                 cid.toString(),
                 time);
-
-        // 统计在线人数
-        redisTemplate.opsForZSet().add("online-%s".formatted(cid), uid, Instant.now().plus(5, ChronoUnit.SECONDS).toEpochMilli());
-
     }
 
 
@@ -1043,6 +1039,35 @@ public class VodServiceImpl implements VodService {
             return previewBVodVO;
         }).toList();
     }
+
+    @Override
+    public List<VodVO> collections(String uid, String setKey, Integer offset, Integer size) {
+        if (StringUtils.isBlank(uid)) {
+            uid = (String) StpUtil.getLoginId();
+        }
+        setKey = setKey.concat(uid);
+        Long collectCount = redisTemplate.opsForZSet().size(setKey);
+        if (Objects.isNull(collectCount)) {
+            collectCount = 0L;
+        }
+        Set<Long> cidSet = Objects.requireNonNull(
+                        redisTemplate.opsForZSet()
+                                .reverseRange(setKey, offset, Math.min(offset + size, collectCount))
+                )
+                .stream()
+                .filter(Objects::nonNull)
+                .map(e -> Long.parseLong(e.toString()))
+                .collect(Collectors.toSet());
+
+
+        // 组装 视频稿件
+        List<VodInfo> vodInfoList = mongoTemplate.find(
+                new Query(Criteria.where("_id").in(cidSet)),
+                VodInfo.class
+        );
+        return batchBuildVodVOWithoutQuality(vodInfoList, true);
+    }
+
 
     @Override
     public VodThumbnails thumbnails(Long cid) {

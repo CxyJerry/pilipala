@@ -2,6 +2,8 @@ package com.jerry.pilipala.domain.interactive.handler;
 
 import cn.hutool.core.date.DateUtil;
 import com.jerry.pilipala.domain.common.template.MessageTrigger;
+import com.jerry.pilipala.domain.interactive.entity.BaseInteractiveParam;
+import com.jerry.pilipala.domain.interactive.entity.VodInteractiveParam;
 import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
@@ -33,11 +35,12 @@ public class LikeInteractiveActionHandler extends InteractiveActionHandler {
     }
 
     @Override
-    public VodInteractiveAction trigger(Map<String, Object> params) {
+    public VodInteractiveAction handle(BaseInteractiveParam interactiveParam) {
         // 事件记录
-        VodInteractiveAction interactiveAction = super.trigger(params);
+        VodInteractiveAction interactiveAction = super.handle(interactiveParam);
+        VodInteractiveParam param = (VodInteractiveParam) interactiveParam;
 
-        String cid = params.get("cid").toString();
+        String cid = param.getCid().toString();
 
         // 是取消点赞事件，点赞数 - 1，set 移除 uid
         String uid = interactiveAction.getUid();

@@ -1,43 +1,42 @@
 package com.jerry.pilipala.domain.interactive.handler;
 
+import com.jerry.pilipala.domain.interactive.entity.BarrageInteractiveParam;
 import com.jerry.pilipala.domain.interactive.entity.BaseInteractiveParam;
-import com.jerry.pilipala.domain.interactive.entity.CommentInteractiveParam;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
-import com.jerry.pilipala.domain.vod.service.CommentService;
+import com.jerry.pilipala.domain.vod.service.DanmakuService;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CommentInteractiveActionHandler extends InteractiveActionHandler {
-    private final CommentService commentService;
+public class DanmakuInteractiveActionHandler extends InteractiveActionHandler {
+    private final DanmakuService danmakuService;
 
-    public CommentInteractiveActionHandler(MongoTemplate mongoTemplate,
+    public DanmakuInteractiveActionHandler(MongoTemplate mongoTemplate,
                                            RedisTemplate<String, Object> redisTemplate,
-                                           CommentService commentService) {
+                                           DanmakuService danmakuService) {
         super(mongoTemplate, redisTemplate);
-        this.commentService = commentService;
+        this.danmakuService = danmakuService;
     }
 
     @Override
     public VodInteractiveAction handle(BaseInteractiveParam interactiveParam) {
         VodInteractiveAction interactiveAction = super.handle(interactiveParam);
-        CommentInteractiveParam param = (CommentInteractiveParam) interactiveParam;
-        String cid = param.getCid().toString();
+        BarrageInteractiveParam param = (BarrageInteractiveParam) interactiveParam;
 
-        // 推送评论
-        commentService.post(param.getSelfUid(), param.getComment());
+        // 推送弹幕数据
+        danmakuService.send(param.getSelfUid(), param.getDanmaku());
 
         // 更新统计数据
+        String cid = param.getCid().toString();
         checkVodStatisticsExists(cid);
-        incVodStatistics(cid, "commentCount", true);
-
+        incVodStatistics(cid, "barrageCount", true);
         return interactiveAction;
     }
 
     @Override
     public VodInteractiveActionEnum action() {
-        return VodInteractiveActionEnum.COMMENT;
+        return VodInteractiveActionEnum.BARRAGE;
     }
 }
