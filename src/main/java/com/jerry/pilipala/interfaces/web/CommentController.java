@@ -1,34 +1,34 @@
 package com.jerry.pilipala.interfaces.web;
 
-import com.google.common.collect.Maps;
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.dto.CommentDTO;
 import com.jerry.pilipala.application.vo.vod.CommentVO;
-import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.interactive.entity.CommentInteractiveParam;
+import com.jerry.pilipala.domain.interactive.entity.DeleteCommentInteractiveParam;
+import com.jerry.pilipala.domain.interactive.handler.InteractiveActionTrigger;
 import com.jerry.pilipala.domain.vod.service.CommentService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import java.util.HashMap;
 
 @Validated
 @RestController
 @RequestMapping("/comment")
 public class CommentController {
     private final CommentService commentService;
-    private final InteractiveActionStrategy interactiveActionStrategy;
+    private final InteractiveActionTrigger interactiveActionTrigger;
 
     public CommentController(CommentService commentService,
-                             InteractiveActionStrategy interactiveActionStrategy) {
+                             InteractiveActionTrigger interactiveActionTrigger) {
         this.commentService = commentService;
 
-        this.interactiveActionStrategy = interactiveActionStrategy;
+        this.interactiveActionTrigger = interactiveActionTrigger;
     }
 
     /**
@@ -37,16 +37,33 @@ public class CommentController {
      * @param commentDTO dto
      * @return success
      */
-    @ApiOperation("发送评论")
-//    @SaCheckLogin
+    @Operation(summary = "发送评论")
+    @SaCheckLogin
     @PostMapping("/post")
     public CommonResponse<?> post(@RequestBody @Valid CommentDTO commentDTO) {
-        CommentVO commentVO = commentService.post(commentDTO);
+        String uid = (String) StpUtil.getLoginId();
+        CommentInteractiveParam param = new CommentInteractiveParam();
+        param.setComment(commentDTO)
+                .setCid(Long.valueOf(commentDTO.getCid()))
+                .setSelfUid(uid);
 
-        HashMap<@Nullable String, @Nullable Object> params = Maps.newHashMap();
-        params.put("cid", commentDTO.getCid());
-        interactiveActionStrategy.trigger(VodInteractiveActionEnum.COMMENT, params);
-        return CommonResponse.success(commentVO);
+        interactiveActionTrigger.trigger(VodInteractiveActionEnum.COMMENT, param);
+        return CommonResponse.success();
+    }
+
+    @Operation(summary = "删除评论")
+    @SaCheckLogin
+    @DeleteMapping("/delete")
+    public CommonResponse<?> delete(@RequestParam(value = "cid")
+                                    @NotBlank(message = "cid 不得为空") String cid,
+                                    @RequestParam(value = "comment_id")
+                                    @NotBlank(message = "评论ID不得为空") String commentId) {
+        DeleteCommentInteractiveParam param = new DeleteCommentInteractiveParam();
+        param.setCommentId(commentId)
+                .setCid(Long.valueOf(cid))
+                .setSelfUid((String) StpUtil.getLoginId());
+        interactiveActionTrigger.trigger(VodInteractiveActionEnum.DELETE_COMMENT, param);
+        return CommonResponse.success();
     }
 
     /**
@@ -58,7 +75,7 @@ public class CommentController {
      * @param pageSize  数量
      * @return page
      */
-    @ApiOperation("获取评论")
+    @Operation(summary = "获取评论")
     @GetMapping("/get")
     public CommonResponse<?> get(@RequestParam("cid") @NotBlank(message = "稿件ID不得为空") String cid,
                                  @RequestParam("parent_comment_id") String commentId,

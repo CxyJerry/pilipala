@@ -10,16 +10,15 @@ import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.config.Qiniu;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 
 @Slf4j
 @RestController
@@ -45,7 +44,7 @@ public class FileController {
      * @param cid 预上传生产的稿件id
      * @return success
      */
-    @ApiOperation("上传视频文件")
+    @Operation(summary = "上传视频文件")
     @SaCheckPermission("post-vod")
     @RateLimiter(key = "vod-limit:upload", count = 3, message = "上传速度过快，请稍后再试试吧", limitType = LimitType.IP)
     @GetMapping("/upload")
@@ -54,13 +53,13 @@ public class FileController {
         return CommonResponse.success(uploadVO);
     }
 
-    @ApiOperation("上传视频完成")
+    @Operation(summary = "上传视频完成")
     @RequestMapping(method = RequestMethod.HEAD, value = "/upload/completed")
     public void uploadCompleted(@RequestParam("cid") @NotNull(message = "稿件ID不得为空") Long cid) {
         fileService.uploadCompleted(cid);
     }
 
-//    @ApiOperation("分片上传视频")
+//    @Operation(summary = "分片上传视频")
 //    @SaCheckPermission("post-vod")
 //    @PostMapping("/upload-chunk")
 //    public CommonResponse<?> uploadChunk(@RequestParam("chunk") @NotNull(message = "视频内容不得为空") MultipartFile video,
@@ -75,7 +74,7 @@ public class FileController {
      * @param cover 封面文件
      * @return 文件地址
      */
-    @ApiOperation("上传视频封面")
+    @Operation(summary = "上传视频封面")
     @SaCheckPermission("post-vod")
     @RateLimiter(key = "vod-limit:upload-cover", count = 3, message = "上传速度过快，请稍后再试试吧", limitType = LimitType.IP)
     @PostMapping("/upload-cover")
@@ -91,7 +90,7 @@ public class FileController {
      * @param format 稿件清晰度规格
      * @param name   文件名
      */
-    @ApiOperation("获取视频文件")
+    @Operation(summary = "获取视频文件")
     @GetMapping("/video/{cid}/{format}/{name}")
     public ResponseEntity<InputStreamResource> video(@PathVariable("cid") @NotNull(message = "稿件ID不得为空") Long cid,
                                                      @PathVariable("format") @NotBlank(message = "清晰度不得为空") String format,
@@ -104,7 +103,7 @@ public class FileController {
      *
      * @param filename 文件地址
      */
-    @ApiOperation("获取视频封面")
+    @Operation(summary = "获取视频封面")
     @GetMapping("/cover/{filename}")
     public ResponseEntity<InputStreamResource> cover(@PathVariable("filename") @NotBlank(message = "稿件名称不得为空") String filename) {
         return fileService.cover(filename);

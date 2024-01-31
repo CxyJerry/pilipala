@@ -1,20 +1,21 @@
 package com.jerry.pilipala.interfaces.web;
 
 import cn.dev33.satoken.annotation.SaCheckLogin;
-import com.google.common.collect.Maps;
+import cn.dev33.satoken.stp.StpUtil;
 import com.jerry.pilipala.application.vo.user.DynamicVO;
 import com.jerry.pilipala.application.vo.user.UserVO;
-import com.jerry.pilipala.domain.interactive.handler.InteractiveActionStrategy;
+import com.jerry.pilipala.domain.interactive.entity.FollowInteractiveParam;
+import com.jerry.pilipala.domain.interactive.handler.InteractiveActionTrigger;
 import com.jerry.pilipala.domain.user.service.FansService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.video.VodInteractiveActionEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Validated
@@ -22,12 +23,12 @@ import java.util.List;
 @RequestMapping("/fans")
 public class FansController {
     private final FansService fansService;
-    private final InteractiveActionStrategy interactiveActionStrategy;
+    private final InteractiveActionTrigger interactiveActionTrigger;
 
     public FansController(FansService fansService,
-                          InteractiveActionStrategy interactiveActionStrategy) {
+                          InteractiveActionTrigger interactiveActionTrigger) {
         this.fansService = fansService;
-        this.interactiveActionStrategy = interactiveActionStrategy;
+        this.interactiveActionTrigger = interactiveActionTrigger;
     }
 
     /**
@@ -36,15 +37,17 @@ public class FansController {
      * @param upUid upID
      * @return userVO
      */
-    @ApiOperation("关注/取消关注")
+    @Operation(summary = "关注/取消关注")
     @SaCheckLogin
     @PutMapping("/put")
     public CommonResponse<?> put(@RequestParam("up_uid") @NotBlank(message = "用户ID不存在") String upUid) {
-        UserVO myUserVO = fansService.put(upUid);
-        // 新增互动数据
-        interactiveActionStrategy.trigger(VodInteractiveActionEnum.FOLLOW, Maps.newHashMap());
+        FollowInteractiveParam param = new FollowInteractiveParam();
+        String uid = (String) StpUtil.getLoginId();
+        param.setUpUid(upUid)
+                .setSelfUid(uid);
 
-        return CommonResponse.success(myUserVO);
+        interactiveActionTrigger.trigger(VodInteractiveActionEnum.FOLLOW, param);
+        return CommonResponse.success();
     }
 
     /**
@@ -52,7 +55,7 @@ public class FansController {
      *
      * @return 关注列表
      */
-    @ApiOperation("获取关注列表")
+    @Operation(summary = "获取关注列表")
     @SaCheckLogin
     @GetMapping("/idles")
     public CommonResponse<?> idles() {
@@ -60,7 +63,7 @@ public class FansController {
         return CommonResponse.success(idles);
     }
 
-    @ApiOperation("获取动态消息")
+    @Operation(summary = "获取动态消息")
     @SaCheckLogin
     @GetMapping("/dynamic")
     public CommonResponse<?> dynamic(

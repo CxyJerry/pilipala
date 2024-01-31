@@ -17,6 +17,7 @@ public class Comment {
     private String cid;
     private String content;
     private Boolean hasChild = false;
+    private Boolean deleted = false;
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
 }

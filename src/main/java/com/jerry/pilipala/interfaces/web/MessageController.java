@@ -8,15 +8,15 @@ import com.jerry.pilipala.application.vo.message.UnreadMessageCountVO;
 import com.jerry.pilipala.domain.message.service.MessageService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Validated
@@ -29,21 +29,21 @@ public class MessageController {
         this.messageService = messageService;
     }
 
-    @ApiOperation("保存消息模板")
+    @Operation(summary = "保存消息模板")
     @PostMapping("/template/save")
     public CommonResponse<?> saveTemplate(@RequestBody @Valid TemplateDTO templateDTO) {
         messageService.saveMessageTemplate(templateDTO.getName(), templateDTO.getContent());
         return CommonResponse.success();
     }
 
-    @ApiOperation("删除消息模板")
+    @Operation(summary = "删除消息模板")
     @DeleteMapping("/template/delete")
     public CommonResponse<?> deleteTemplate(@RequestParam("name") String name) {
         messageService.deleteMessageTemplate(name);
         return CommonResponse.success();
     }
 
-    @ApiOperation("消息模板列表")
+    @Operation(summary = "消息模板列表")
     @GetMapping("/template/get")
     public CommonResponse<?> getTemplates() {
         List<TemplateVO> templates = messageService.messageTemplates();
@@ -55,7 +55,7 @@ public class MessageController {
      *
      * @return count
      */
-    @ApiOperation("获取未读消息数量")
+    @Operation(summary = "获取未读消息数量")
     @GetMapping("/unread/count")
     public CommonResponse<?> unreadCount() {
         String uid = StpUtil.getLoginId("");
@@ -73,7 +73,7 @@ public class MessageController {
      * @param pageSize 数量
      * @return page
      */
-    @ApiOperation("分页获取消息")
+    @Operation(summary = "分页获取消息")
     @GetMapping("/page")
     public CommonResponse<?> page(@RequestParam("type")
                                   @NotBlank(message = "消息类型不得为空") String type,

@@ -1,6 +1,6 @@
 package com.jerry.pilipala.domain.interactive.handler;
 
-import com.google.common.collect.Maps;
+import com.jerry.pilipala.domain.interactive.entity.BaseInteractiveParam;
 import com.jerry.pilipala.domain.vod.entity.mongo.interactive.VodInteractiveAction;
 import com.jerry.pilipala.domain.vod.entity.mongo.statitics.VodStatistics;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -23,15 +22,14 @@ public abstract class InteractiveActionHandler {
         this.redisTemplate = redisTemplate;
     }
 
-    public VodInteractiveAction trigger(Map<String, Object> params) {
-        params = Objects.isNull(params) ? Maps.newHashMap() : params;
-        String uid = (String) params.getOrDefault("uid", "unknown");
+    public VodInteractiveAction handle(BaseInteractiveParam interactiveParam) {
+        String uid = interactiveParam.getSelfUid();
         long current = System.currentTimeMillis();
         String id = UUID.randomUUID().toString().replace("-", "");
         VodInteractiveAction interactiveAction = new VodInteractiveAction()
                 .setId(id)
                 .setUid(uid)
-                .setParams(params)
+                .setParam(interactiveParam)
                 .setInteractiveAction(action().getName())
                 .setCtime(current)
                 .setMtime(current);
@@ -39,8 +37,6 @@ public abstract class InteractiveActionHandler {
         return interactiveAction;
     }
 
-    public void cleaning() {
-    }
 
     protected void checkVodStatisticsExists(String cid) {
         VodStatistics vodStatistics;

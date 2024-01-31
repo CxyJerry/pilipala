@@ -2,7 +2,6 @@ package com.jerry.pilipala.domain.user.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.date.DateUtil;
-import com.jerry.pilipala.application.bo.UserInfoBO;
 import com.jerry.pilipala.application.dto.EmailLoginDTO;
 import com.jerry.pilipala.application.dto.LoginDTO;
 import com.jerry.pilipala.application.dto.UserUpdateDTO;
@@ -15,8 +14,6 @@ import com.jerry.pilipala.domain.user.entity.mongo.User;
 import com.jerry.pilipala.domain.user.entity.neo4j.UserEntity;
 import com.jerry.pilipala.domain.user.repository.UserEntityRepository;
 import com.jerry.pilipala.domain.user.service.UserService;
-import com.jerry.pilipala.domain.vod.entity.mongo.vod.VodInfo;
-import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.infrastructure.common.errors.BusinessException;
 import com.jerry.pilipala.infrastructure.common.response.StandardResponse;
 import com.jerry.pilipala.infrastructure.enums.message.TemplateNameEnum;
@@ -26,6 +23,7 @@ import com.jerry.pilipala.infrastructure.utils.CaptchaUtil;
 import com.jerry.pilipala.infrastructure.utils.JsonHelper;
 import com.jerry.pilipala.infrastructure.utils.Page;
 import com.jerry.pilipala.infrastructure.utils.RequestUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -35,7 +33,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -51,7 +48,6 @@ public class UserServiceImpl implements UserService {
     private final HttpServletRequest request;
     private final JsonHelper jsonHelper;
     private final MessageTrigger messageTrigger;
-    private final VodService vodService;
 
 
     public UserServiceImpl(RedisTemplate<String, Object> redisTemplate,
@@ -59,8 +55,7 @@ public class UserServiceImpl implements UserService {
                            SmsService smsService,
                            UserEntityRepository userEntityRepository,
                            HttpServletRequest request, JsonHelper jsonHelper,
-                           MessageTrigger messageTrigger,
-                           VodService vodService) {
+                           MessageTrigger messageTrigger) {
         this.redisTemplate = redisTemplate;
         this.mongoTemplate = mongoTemplate;
         this.smsService = smsService;
@@ -68,7 +63,6 @@ public class UserServiceImpl implements UserService {
         this.request = request;
         this.jsonHelper = jsonHelper;
         this.messageTrigger = messageTrigger;
-        this.vodService = vodService;
     }
 
     @Override
@@ -125,7 +119,6 @@ public class UserServiceImpl implements UserService {
                 variables
         );
 
-
         String roleId = user.getRoleId();
         Role role;
         if (StringUtils.isBlank(roleId)) {
@@ -137,14 +130,10 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        UserInfoBO userInfoBO = new UserInfoBO()
-                .setUid(user.getUid().toString())
-                .setRoleId(roleId)
-                .setPermissionIdList(role.getPermissionIds());
-        StpUtil.getSession().set("user-info", userInfoBO);
 
         return userVO(user.getUid().toString(), false);
     }
+
 
     @Override
     public void code(String tel) {
@@ -273,35 +262,6 @@ public class UserServiceImpl implements UserService {
                 .setPage(userVOList);
     }
 
-    @Override
-    public List<VodVO> collections(String uid, String setKey, Integer offset, Integer size) {
-        if (StringUtils.isBlank(uid)) {
-            uid = (String) StpUtil.getLoginId();
-        }
-        setKey = setKey.concat(uid);
-        Long collectCount = redisTemplate.opsForZSet().size(setKey);
-        if (Objects.isNull(collectCount)) {
-            collectCount = 0L;
-        }
-        Set<Long> cidSet = Objects.requireNonNull(
-                        redisTemplate.opsForZSet()
-                                .reverseRange(setKey, offset, Math.min(offset + size, collectCount))
-                )
-                .stream()
-                .filter(Objects::nonNull)
-                .map(e -> Long.parseLong(e.toString()))
-                .collect(Collectors.toSet());
-
-
-        String finalSetKey = setKey;
-
-        // 组装 视频稿件
-        List<VodInfo> vodInfoList = mongoTemplate.find(
-                new Query(Criteria.where("_id").in(cidSet)),
-                VodInfo.class
-        );
-        return vodService.batchBuildVodVOWithoutQuality(vodInfoList, true);
-    }
 
     private Map<Long, Long> getInteractiveTimes(String setKey, String uid, List<VodVO> vodVOList) {
         Map<Long, Long> timeMap = new HashMap<>();
@@ -364,5 +324,24 @@ public class UserServiceImpl implements UserService {
         mongoTemplate.save(user);
 
         return userVO(uid, true);
+    }
+
+    @Override
+    public List<String> getPermissionIds(String uid) {
+        User user = mongoTemplate.findById(new ObjectId(uid), User.class);
+        if (Objects.isNull(user)) {
+            throw BusinessException.businessError("用户不存在");
+        }
+        String roleId = user.getRoleId();
+        Role role;
+        if (StringUtils.isBlank(roleId)) {
+            role = new Role();
+        } else {
+            role = mongoTemplate.findById(new ObjectId(roleId), Role.class);
+            if (Objects.isNull(role)) {
+                role = new Role();
+            }
+        }
+        return role.getPermissionIds();
     }
 }

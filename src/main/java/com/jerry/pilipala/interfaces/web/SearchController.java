@@ -4,16 +4,15 @@ import com.jerry.pilipala.application.vo.vod.SearchResultVO;
 import com.jerry.pilipala.domain.common.services.SearchService;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 
 @Validated
 @RestController
@@ -35,7 +34,7 @@ public class SearchController {
      * @param pageSize 数量
      * @return page
      */
-    @ApiOperation("搜索")
+    @Operation(summary = "搜索")
     @GetMapping("/get")
     public CommonResponse<?> search(
             @RequestParam("type") String type,

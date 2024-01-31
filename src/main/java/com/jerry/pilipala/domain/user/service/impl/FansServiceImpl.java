@@ -48,15 +48,14 @@ public class FansServiceImpl implements FansService {
     }
 
     @Override
-    public UserVO put(String upUid) {
-        String myUid = (String) StpUtil.getLoginId();
-        if (upUid.equals(myUid)) {
+    public void put(String uid, String upUid) {
+        if (upUid.equals(uid)) {
             throw new BusinessException("无须关注自己", StandardResponse.ERROR);
         }
 
-        UserEntity mySelf = userEntityRepository.findById(myUid).orElse(null);
+        UserEntity mySelf = userEntityRepository.findById(uid).orElse(null);
         if (Objects.isNull(mySelf)) {
-            return null;
+            throw BusinessException.businessError("用户不存在");
         }
         Set<String> followSet = mySelf.getFollowUps()
                 .stream()
@@ -68,14 +67,11 @@ public class FansServiceImpl implements FansService {
         }
 
         if (followSet.contains(upUid)) {
-            userEntityRepository.removeFollowUpRelation(myUid, upUid);
+            userEntityRepository.removeFollowUpRelation(uid, upUid);
         } else {
             mySelf.getFollowUps().add(upEntity);
             userEntityRepository.save(mySelf);
         }
-
-
-        return userService.userVO(myUid, true);
     }
 
     @Override

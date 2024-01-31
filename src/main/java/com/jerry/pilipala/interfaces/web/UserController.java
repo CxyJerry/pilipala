@@ -7,19 +7,20 @@ import com.jerry.pilipala.application.dto.UserUpdateDTO;
 import com.jerry.pilipala.application.vo.user.UserVO;
 import com.jerry.pilipala.application.vo.vod.VodVO;
 import com.jerry.pilipala.domain.user.service.UserService;
+import com.jerry.pilipala.domain.vod.service.VodService;
 import com.jerry.pilipala.infrastructure.annotations.RateLimiter;
 import com.jerry.pilipala.infrastructure.common.response.CommonResponse;
 import com.jerry.pilipala.infrastructure.enums.LimitType;
 import com.jerry.pilipala.infrastructure.enums.redis.VodCacheKeyEnum;
 import com.jerry.pilipala.infrastructure.utils.Page;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import java.util.List;
 
 @Validated
@@ -27,10 +28,12 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final VodService vodService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, VodService vodService) {
         this.userService = userService;
 
+        this.vodService = vodService;
     }
 
     /**
@@ -39,7 +42,7 @@ public class UserController {
      * @param tel 手机号
      * @return success
      */
-    @ApiOperation("获取登录验证码")
+    @Operation(summary = "获取登录验证码")
     @GetMapping("/code")
     public CommonResponse<?> code(@RequestParam("tel") @NotBlank(message = "手机号不得为空") String tel) {
         userService.code(tel);
@@ -52,7 +55,7 @@ public class UserController {
      * @param loginDTO dto
      * @return userVO
      */
-    @ApiOperation("登录")
+    @Operation(summary = "登录")
     @PostMapping("/login")
     @RateLimiter(key = "user-limit:login", seconds = 3, count = 1, limitType = LimitType.IP)
     public CommonResponse<?> login(@Valid @RequestBody LoginDTO loginDTO) {
@@ -66,7 +69,7 @@ public class UserController {
      * @param email 手机号
      * @return success
      */
-    @ApiOperation("获取邮箱登录验证码")
+    @Operation(summary = "获取邮箱登录验证码")
     @GetMapping("/email-code")
     public CommonResponse<?> emailCode(@RequestParam("email") @NotBlank(message = "邮箱不得为空") String email) {
         userService.emailCode(email);
@@ -79,7 +82,7 @@ public class UserController {
      * @param loginDTO dto
      * @return userVO
      */
-    @ApiOperation("邮箱验证码登录")
+    @Operation(summary = "邮箱验证码登录")
     @PostMapping("/email-login")
     @RateLimiter(key = "user-limit:login", seconds = 3, count = 1, limitType = LimitType.IP)
     public CommonResponse<?> emailLogin(@Valid @RequestBody EmailLoginDTO loginDTO) {
@@ -90,7 +93,7 @@ public class UserController {
     /**
      * 登出
      */
-    @ApiOperation("登出")
+    @Operation(summary = "登出")
     @GetMapping("/logout")
     public void logout() {
         StpUtil.logout();
@@ -102,7 +105,7 @@ public class UserController {
      * @param uid 用户ID
      * @return userVO
      */
-    @ApiOperation("获取用户基本信息")
+    @Operation(summary = "获取用户基本信息")
     @GetMapping("/info")
     public CommonResponse<?> info(@RequestParam("uid") String uid) {
         UserVO userVO = userService.userVO(uid, false);
@@ -116,7 +119,7 @@ public class UserController {
      * @param pageSize 数量
      * @return page
      */
-    @ApiOperation("获取用户列表")
+    @Operation(summary = "获取用户列表")
     @GetMapping("/page")
     public CommonResponse<?> page(@RequestParam("page_no")
                                   @Min(value = 1, message = "最小1")
@@ -136,12 +139,12 @@ public class UserController {
      * @param size   获取数量
      * @return list
      */
-    @ApiOperation("获取最近收藏")
+    @Operation(summary = "获取最近收藏")
     @GetMapping("/collections")
     public CommonResponse<?> collections(@RequestParam(value = "uid", required = false) String uid,
                                          @RequestParam("offset") Integer offset,
                                          @RequestParam("size") Integer size) {
-        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.COLLECT_SET, offset, size);
+        List<VodVO> vodList = vodService.collections(uid, VodCacheKeyEnum.SetKey.COLLECT_SET, offset, size);
         userService.appendCollectTime(uid, vodList);
         return CommonResponse.success(vodList);
     }
@@ -154,12 +157,12 @@ public class UserController {
      * @param size   获取量
      * @return list
      */
-    @ApiOperation(("获取最近投币"))
+    @Operation(summary = ("获取最近投币"))
     @GetMapping("/coins")
     public CommonResponse<?> coins(@RequestParam(value = "uid", required = false) String uid,
                                    @RequestParam("offset") Integer offset,
                                    @RequestParam("size") Integer size) {
-        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.COIN_SET, offset, size);
+        List<VodVO> vodList = vodService.collections(uid, VodCacheKeyEnum.SetKey.COIN_SET, offset, size);
         userService.appendCoinTime(uid, vodList);
         return CommonResponse.success(vodList);
     }
@@ -172,12 +175,12 @@ public class UserController {
      * @param size   获取量
      * @return list
      */
-    @ApiOperation(("获取最近点赞"))
+    @Operation(summary = ("获取最近点赞"))
     @GetMapping("/likes")
     public CommonResponse<?> likes(@RequestParam(value = "uid", required = false) String uid,
                                    @RequestParam("offset") Integer offset,
                                    @RequestParam("size") Integer size) {
-        List<VodVO> vodList = userService.collections(uid, VodCacheKeyEnum.SetKey.LIKE_SET, offset, size);
+        List<VodVO> vodList = vodService.collections(uid, VodCacheKeyEnum.SetKey.LIKE_SET, offset, size);
         userService.appendLikeTime(uid, vodList);
         return CommonResponse.success(vodList);
     }
@@ -188,7 +191,7 @@ public class UserController {
      * @param announcement 新公告内容
      * @return 修改后的公告内容
      */
-    @ApiOperation("修改个人公告")
+    @Operation(summary = "修改个人公告")
     @PutMapping("/announcement")
     public CommonResponse<?> announcement(String announcement) {
         String announcement_content = userService.announcement(announcement);
@@ -201,7 +204,7 @@ public class UserController {
      * @param userUpdateDTO 更新实体数据
      * @return 用户视图模型
      */
-    @ApiOperation("修改个人信息")
+    @Operation(summary = "修改个人信息")
     @PutMapping("/update")
     public CommonResponse<?> update(@RequestBody UserUpdateDTO userUpdateDTO) {
         UserVO userVO = userService.updateUserInfo(userUpdateDTO);

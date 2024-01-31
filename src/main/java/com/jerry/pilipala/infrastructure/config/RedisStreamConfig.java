@@ -1,6 +1,7 @@
 package com.jerry.pilipala.infrastructure.config;
 
 import com.jerry.pilipala.infrastructure.annotations.RedisStreamListener;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +13,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.Map;
 

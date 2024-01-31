@@ -52,7 +52,7 @@ public class RestTemplateLoggingInterceptor implements ClientHttpRequestIntercep
     private RequestInfo extractRequest(HttpRequest httpRequest, byte[] body) {
         RequestInfo requestInfo = new RequestInfo();
         return requestInfo.setUrl(httpRequest.getURI().toString())
-                .setMethod(httpRequest.getMethodValue())
+                .setMethod(httpRequest.getMethod().name())
                 .setHeaders(httpRequest.getHeaders().toString())
                 .setBody(body.toString());
     }

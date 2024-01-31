@@ -18,7 +18,6 @@ public class Danmaku {
     private Double time;
     private String text;
     private Integer color;
-    private String ip;
     private Integer visible = 0;
     private Long ctime = System.currentTimeMillis();
     private Long mtime = System.currentTimeMillis();
